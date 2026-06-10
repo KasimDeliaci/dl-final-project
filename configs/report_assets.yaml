@@ -1,0 +1,19 @@
+report_assets:
+  tables_dir: artifacts/report_assets/tables
+  figures_dir: artifacts/report_assets/figures
+
+required_figures:
+  - class_distribution
+  - single_backbone_baselines
+  - fusion_comparison
+  - frozen_vs_finetuned
+  - final_confusion_matrix
+  - final_per_class_f1
+
+required_tables:
+  - dataset_split_summary
+  - single_backbone_results
+  - fusion_results
+  - fine_tuning_results
+  - final_leaderboard
+

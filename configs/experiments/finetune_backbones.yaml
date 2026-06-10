@@ -1,0 +1,14 @@
+experiment:
+  id: finetune_backbones
+  feature_source: finetuned
+  selection_metric: validation_macro_f1
+  test_policy: audit_only
+  planned_backbones:
+    - vit_b16
+    - swin_tiny
+    - deit3_small
+  transfer_learning_policy:
+    frozen_baseline_required: true
+    unfreeze_last_transformer_blocks: pending
+    checkpoint_selection: validation_macro_f1
+  status: scaffold_only

@@ -1,0 +1,15 @@
+experiment_matrix:
+  id: finetuned_feature_matrix
+  feature_source: finetuned
+  classifier: mlp
+  selection_metric: validation_macro_f1
+  test_policy: audit_only
+  fusion_methods:
+    - concat
+    - weighted
+  planned_scope:
+    single_backbone: true
+    representative_pairwise_fusion: true
+    representative_three_backbone_fusion: true
+  status: scaffold_only
+

@@ -1,0 +1,15 @@
+backbone:
+  id: swin_tiny
+  display_name: Swin Transformer
+  required_by_assignment: true
+  family: hierarchical_vision_transformer
+  pretrained_source: pending
+  input_size: pending
+  feature_extraction_point: pending
+  feature_dimension: pending
+  fine_tuning_policy:
+    unfreeze_blocks: pending
+    learning_rate: pending
+  notes:
+    - Decide final stage pooling and feature vector extraction policy before implementation.
+

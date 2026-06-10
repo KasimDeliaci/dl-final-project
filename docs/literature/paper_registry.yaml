@@ -1,0 +1,19 @@
+papers: []
+
+schema:
+  key: citation_key
+  title: paper_title
+  authors: author_list
+  year: publication_year
+  venue: venue_or_preprint
+  url: source_url
+  local_pdf: optional_local_pdf_path
+  role:
+    - dataset
+    - backbone
+    - transformer
+    - fusion
+    - evaluation
+    - related_work
+  notes: short_project_relevance
+

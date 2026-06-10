@@ -1,0 +1,15 @@
+backbone:
+  id: vit_b16
+  display_name: Vanilla ViT
+  required_by_assignment: true
+  family: vision_transformer
+  pretrained_source: pending
+  input_size: pending
+  feature_extraction_point: pending
+  feature_dimension: pending
+  fine_tuning_policy:
+    unfreeze_blocks: pending
+    learning_rate: pending
+  notes:
+    - Decide CLS token vs pooled representation before implementation.
+

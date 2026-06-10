@@ -1,0 +1,31 @@
+dataset:
+  name: ham10000
+  display_name: HAM10000
+  task: seven_class_dermoscopic_image_classification
+  raw_dir: data/raw
+  processed_dir: data/processed
+  metadata_dir: data/metadata
+  metadata_filename: HAM10000_metadata.csv
+  splits_dir: data/splits
+  image_size: null
+  num_classes: 7
+  seed: 42
+  class_names:
+    - akiec
+    - bcc
+    - bkl
+    - df
+    - nv
+    - mel
+    - vasc
+  split:
+    train: 0.70
+    val: 0.15
+    test: 0.15
+    policy: stratified_grouped_by_lesion_id_when_available
+  primary_metric: macro_f1
+  notes:
+    - Use canonical HAM10000 metadata if possible.
+    - Prefer lesion-level grouping when lesion_id is available.
+    - Report macro and per-class metrics because accuracy is insufficient under class imbalance.
+

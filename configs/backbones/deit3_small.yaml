@@ -1,0 +1,16 @@
+backbone:
+  id: deit3_small
+  display_name: DeiT III-Small
+  required_by_assignment: false
+  family: deit_iii
+  pretrained_source: pending
+  input_size: pending
+  feature_extraction_point: pending
+  feature_dimension: pending
+  fine_tuning_policy:
+    unfreeze_blocks: pending
+    learning_rate: pending
+  notes:
+    - Selected third transformer backbone for the project.
+    - Chosen over BEiT because HAM10000-specific literature support is stronger for DeiT III.
+    - Small variant is preferred over Base to keep Colab cost manageable.

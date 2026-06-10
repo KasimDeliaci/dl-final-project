@@ -1,0 +1,19 @@
+experiment_matrix:
+  id: frozen_feature_matrix
+  feature_source: frozen
+  classifier: mlp
+  selection_metric: validation_macro_f1
+  test_policy: audit_only
+  fusion_methods:
+    - none
+    - concat
+    - weighted
+  planned_backbones:
+    - vit_b16
+    - swin_tiny
+    - deit3_small
+  planned_comparisons:
+    single_backbone: true
+    pairwise_fusion: true
+    three_backbone_fusion: true
+  status: scaffold_only

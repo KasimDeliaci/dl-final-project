@@ -1,0 +1,34 @@
+project:
+  name: dl-final-transformers
+  package: dl_final
+
+paths:
+  data_dir: data
+  artifacts_dir: artifacts
+  outputs_dir: outputs
+  reports_dir: reports
+  splits_dir: data/splits
+
+runtime:
+  seed: 42
+  device: auto
+  num_workers: 2
+  mixed_precision: true
+
+training:
+  batch_size: null
+  epochs: null
+  learning_rate: null
+  weight_decay: null
+  optimizer: null
+  early_stopping_patience: null
+
+mlp:
+  hidden_dims: null
+  dropout: null
+  weighted_fusion: validation_selected
+
+evaluation:
+  primary_metric: macro_f1
+  test_policy: audit_only
+
