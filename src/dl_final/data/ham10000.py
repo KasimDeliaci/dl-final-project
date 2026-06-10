@@ -138,7 +138,9 @@ def audit_metadata(
     )
     missing_images = metadata.loc[metadata["image_path"].eq(""), "image_id"].astype(str).tolist()
     missing_labels = int(metadata["label"].isna().sum())
-    missing_lesion_ids = int(metadata["lesion_id"].isna().sum() + metadata["lesion_id"].eq("").sum())
+    missing_lesion_ids = int(
+        metadata["lesion_id"].isna().sum() + metadata["lesion_id"].eq("").sum()
+    )
     unique_lesion_ids = int(metadata["lesion_id"].replace("", pd.NA).dropna().nunique())
 
     referenced = set(metadata["image_id"].astype(str))

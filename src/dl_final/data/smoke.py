@@ -21,7 +21,7 @@ def smoke_check_split(split_path: Path, max_samples: int = 8) -> dict[str, objec
     checked = 0
     sizes: list[tuple[int, int]] = []
     for row in frame.head(max_samples).itertuples(index=False):
-        image_path = Path(str(getattr(row, "image_path")))
+        image_path = Path(str(row.image_path))
         if not image_path.exists():
             raise FileNotFoundError(f"Image file does not exist: {image_path}")
         with Image.open(image_path) as image:

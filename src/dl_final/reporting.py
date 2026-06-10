@@ -1,5 +1,7 @@
 """Lightweight report asset helpers for Sprint 1."""
 
+# ruff: noqa: E501
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -113,4 +115,3 @@ def _escape(text: str) -> str:
         .replace(">", "&gt;")
         .replace('"', "&quot;")
     )
-
