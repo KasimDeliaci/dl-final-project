@@ -21,7 +21,7 @@ Report role:
 
 ### E0 - Dataset Audit and Split
 
-Status: planned
+Status: completed
 
 Question: HAM10000 split'i leakage-safe ve class-aware biçimde kurulabiliyor mu?
 
@@ -43,6 +43,8 @@ Required artifacts:
 - `docs/DATASET_AUDIT.md`.
 
 Report role: Dataset preparation and leakage control.
+
+Result note: Sprint 1 completed with 10,015 verified images, 7,470 unique lesion IDs, canonical lesion-aware split counts of 7,008 train / 1,504 validation / 1,503 test images, all seven classes present in every split, and zero cross-split lesion leakage.
 
 ### E1 - Frozen Single-Backbone Baselines
 
@@ -150,4 +152,3 @@ Required artifacts:
 - report-ready decision note.
 
 Report role: Final result and discussion anchor.
-
