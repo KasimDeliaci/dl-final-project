@@ -85,7 +85,91 @@ These commands do not train models and do not use the test split for model selec
 
 ## Colab Commands
 
-GPU gerektiren fine-tuning ve image-level transformer işleri Sprint 2+ sırasında eklenecektir. Büyük artifact akışı için Drive root:
+## Sprint 2 Commands
+
+Sprint 2 unit and smoke tests:
+
+```bash
+PYTHONPATH=src uv run python -m pytest tests/test_dataset_sprint1.py tests/test_sprint2_features.py
+```
+
+Frozen transformer feature extraction smoke run without pretrained downloads:
+
+```bash
+PYTHONPATH=src uv run python scripts/extract_features.py \
+  --config configs/dataset/selected_dataset.yaml \
+  --backbones vit_b16 swin_tiny deit3_small \
+  --splits train val \
+  --limit-per-split 2 \
+  --batch-size 1 \
+  --num-workers 0 \
+  --no-pretrained \
+  --output-root artifacts/features_smoke
+```
+
+Full frozen train/validation feature extraction:
+
+```bash
+PYTHONPATH=src uv run python scripts/extract_features.py \
+  --config configs/dataset/selected_dataset.yaml \
+  --backbones vit_b16 swin_tiny deit3_small \
+  --splits train val \
+  --batch-size 32 \
+  --num-workers 2
+```
+
+Optional test cache generation for final-audit readiness only:
+
+```bash
+PYTHONPATH=src uv run python scripts/extract_features.py \
+  --config configs/dataset/selected_dataset.yaml \
+  --backbones vit_b16 swin_tiny deit3_small \
+  --splits test \
+  --batch-size 32 \
+  --num-workers 2
+```
+
+Train validation-selected single-backbone MLP baselines:
+
+```bash
+PYTHONPATH=src uv run python scripts/train_mlp.py \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --backbones vit_b16 swin_tiny deit3_small
+```
+
+Sprint 2 MLP training reads train/validation caches only. Test metrics are not produced in Sprint 2 and must not be used for model selection.
+
+BEiT candidate screening for the third-backbone slot:
+
+```bash
+PYTHONPATH=src uv run python scripts/extract_features.py \
+  --config configs/dataset/selected_dataset.yaml \
+  --backbones beit_base \
+  --splits train val \
+  --batch-size 32 \
+  --num-workers 2
+
+PYTHONPATH=src uv run python scripts/train_mlp.py \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --backbones beit_base \
+  --run-tag beit_screen
+```
+
+This is still validation-only screening. Do not compute or compare test metrics here.
+
+Creates:
+
+```text
+artifacts/features/ham10000/frozen/{vit_b16,swin_tiny,deit3_small}/
+artifacts/runs/*_s2_frozen_*_none_mlp*_seed42/
+artifacts/report_assets/tables/single_backbone_frozen_results.csv
+artifacts/report_assets/tables/single_backbone_frozen_per_class_metrics.csv
+artifacts/report_assets/figures/frozen_single_backbone_macro_f1.png
+```
+
+## Colab Commands
+
+GPU gerektiren full transformer extraction ve fine-tuning işleri Sprint 2+ sırasında Colab'de çalıştırılabilir. Büyük artifact akışı için Drive root:
 
 ```text
 MyDrive/dl-final-artifact/

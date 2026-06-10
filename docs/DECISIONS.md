@@ -49,3 +49,37 @@ Gerekçe: HAM10000 aynı lezyona ait birden fazla görüntü içerebilir. Aynı 
 Karar: Bu proje için büyük artifact ve Colab exchange kökü `dl-final-artifact` olarak ayrılmıştır.
 
 Gerekçe: Eski `dl-midterm` Drive alanı ile final projesinin raw data, checkpoint, feature cache ve run output dosyalarını karıştırmamak gerekir.
+
+## D009 - Sprint 2 Transformer Backbone Implementation
+
+Karar: Sprint 2 frozen feature extraction için `timm` kullanılacaktır. Exact model ID'leri:
+
+- Vanilla ViT: `vit_base_patch16_224.augreg_in21k_ft_in1k`
+- Swin Transformer: `swin_tiny_patch4_window7_224.ms_in1k`
+- DeiT III-Small: `deit3_small_patch16_224.fb_in1k`
+
+Gerekçe: `timm`, üç transformer ailesini tek feature extraction interface'iyle sağlar ve `num_classes=0` ile classifier head'i bypass etmeye izin verir. Bu, eski CNN projesindeki ortak backbone wrapper disiplinini transformer modellerine taşır.
+
+## D010 - Sprint 2 Pooling And Token Policy
+
+Karar: ViT ve DeiT III-Small için canonical frozen feature vector CLS-token representation olacaktır (`global_pool="token"`). Swin için canonical feature vector average pooled final-stage representation olacaktır (`global_pool="avg"`). Üç model de `224x224` ImageNet normalization ile çalıştırılacaktır.
+
+Gerekçe: Sprint 2'nin amacı pooling ablation değil, üç backbone'un tek başına frozen representation kalitesini ölçmektir. Bu nedenle her backbone için tek, açıklanabilir ve `timm` tarafından desteklenen feature extraction noktası seçilmiştir.
+
+## D011 - Sprint 2 Feature Cache And MLP Policy
+
+Karar: Feature cache formatı split başına `.pt` tensor payload, split başına CSV manifest ve backbone başına JSON manifest olacaktır. Cache payload `sample_id`, `image_id`, `lesion_id`, `split`, label, feature tensor ve config metadata taşır. MLP baseline'ları train-only `StandardScaler`, class-weighted cross entropy, dropout/weight decay ve early stopping kullanır. Checkpoint seçimi validation macro-F1 ile yapılır.
+
+Gerekçe: Cache manifestleri row alignment, NaN/Inf kontrolü ve future fusion hazırlığı için gereklidir. Train-only scaler ve train-only class weights validation/test leakage riskini azaltır. MLP kapasitesi modest tutulur, böylece sonuçlar classifier büyüklüğünden çok frozen feature kalitesini yansıtır.
+
+## D012 - Sprint 2 Test Usage Policy
+
+Karar: Sprint 2 train ve validation feature cache'lerini model eğitimi ve seçim için kullanır. Test feature cache'i audit hazırlığı için üretilebilir, ancak Sprint 2 MLP training script'i test cache okumaz ve test metric raporlamaz.
+
+Gerekçe: Test seti yalnız Sprint 5 final audit veya açık diagnostic audit için kullanılmalıdır. Sprint 2 sonuçları validation macro-F1 ve per-class validation metrics üzerinden yorumlanacaktır.
+
+## D013 - BEiT Candidate Screening
+
+Karar: BEiT-Base, üçüncü backbone slotu için validation-only candidate screening olarak denenmiş; ancak canonical üçüncü backbone olarak seçilmemiştir. Canonical set `vit_b16`, `swin_tiny`, `deit3_small` olarak kalacaktır.
+
+Gerekçe: BEiT-Base (`beit_base_patch16_224.in22k_ft_in22k_in1k`) aynı frozen feature + MLP recipe ile validation macro-F1 `0.4759` üretmiştir. DeiT III-Small aynı protokolde `0.5017` validation macro-F1 verdiği için daha güçlü üçüncü single-backbone baseline olarak kalır. Bu seçim validation metric üzerinden yapılmıştır; test seti kullanılmamıştır.

@@ -48,15 +48,15 @@ Result note: Sprint 1 completed with 10,015 verified images, 7,470 unique lesion
 
 ### E1 - Frozen Single-Backbone Baselines
 
-Status: planned
+Status: completed
 
-Question: ViT, Swin ve ek transformer backbone frozen feature extractor olarak tek başına nasıl davranıyor?
+Question: Vanilla ViT, Swin Transformer ve DeiT III-Small frozen feature extractor olarak tek başına nasıl davranıyor?
 
 Hypothesis: Farklı transformer mimarileri aynı dataset üzerinde farklı class-level güçlü/zayıf yönler gösterecektir.
 
 Changed variable: Backbone architecture.
 
-Fixed controls: Split, preprocessing, frozen feature extraction, MLP classifier recipe.
+Fixed controls: Canonical lesion-aware split, deterministic 224x224 ImageNet preprocessing, frozen feature extraction, train-only StandardScaler, class-weighted MLP classifier recipe.
 
 Selection rule: MLP checkpoint validation macro-F1 ile seçilir; test yalnız audit.
 
@@ -65,13 +65,18 @@ Expected failure mode: Feature dimension veya token pooling farkları nedeniyle 
 Required artifacts:
 
 - frozen feature cache,
+- feature manifest,
 - run config JSON,
 - metrics summary,
 - per-class metrics,
 - confusion matrix,
-- prediction dump.
+- prediction dump,
+- training history,
+- runtime metadata.
 
 Report role: Single-backbone representation quality baseline.
+
+Result note: Sprint 2 completed with full train/validation frozen feature caches for Vanilla ViT, Swin Transformer, and DeiT III-Small. MLP checkpoints were selected by validation macro-F1 only. Validation macro-F1 results were ViT `0.6924`, Swin `0.6115`, and DeiT III-Small `0.5017`. BEiT-Base was later screened as a candidate third backbone and reached validation macro-F1 `0.4759`, so it was not selected over DeiT III-Small. Test metrics were not computed for model selection.
 
 ### E2 - Frozen Feature Fusion
 
