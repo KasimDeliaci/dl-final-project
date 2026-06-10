@@ -4,6 +4,8 @@ Bu roadmap kod yazmadan önce proje akışını sabitlemek için hazırlanmışt
 
 Her phase başlamadan önce `docs/exec-plans/active/` altında o phase'e ait kısa execution plan açılmalıdır. Phase tamamlandığında plan `docs/exec-plans/completed/` altına taşınmalı ve ilgili sonuç notu `docs/report_notes/` altında yazılmalıdır.
 
+Detaylı 5 sprint overview planı için ana kaynak: `docs/planning/5-sprint-project-plan.md`.
+
 ## Phase 0 - Setup and Dataset Audit
 
 Amaç:

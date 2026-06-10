@@ -31,6 +31,7 @@ Bu repo koddan önce deney düzenini sabitlemek için scaffold edilmiştir. İlk
 - `docs/ARTIFACT_STANDARD.md`
 - `docs/REPORTING_GUIDELINES.md`
 - `docs/LESSONS_LEARNED.md`
+- `docs/planning/5-sprint-project-plan.md`
 - `docs/literature/README.md`
 
 ## Ana İlke
