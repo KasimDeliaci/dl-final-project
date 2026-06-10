@@ -3,10 +3,13 @@ backbone:
   display_name: DeiT III-Small
   required_by_assignment: false
   family: deit_iii
-  pretrained_source: pending
-  input_size: pending
-  feature_extraction_point: pending
-  feature_dimension: pending
+  library: timm
+  model_id: deit3_small_patch16_224.fb_in1k
+  pretrained_source: ImageNet-1k pretrained weights via timm pretrained cfg
+  input_size: 224
+  feature_extraction_point: classifier-free CLS token representation using num_classes=0 and global_pool=token
+  feature_dimension: 384
+  feature_source: frozen
   fine_tuning_policy:
     unfreeze_blocks: pending
     learning_rate: pending
@@ -14,3 +17,4 @@ backbone:
     - Selected third transformer backbone for the project.
     - Chosen over BEiT because HAM10000-specific literature support is stronger for DeiT III.
     - Small variant is preferred over Base to keep Colab cost manageable.
+    - Sprint 2 uses CLS token features as the canonical single-backbone representation.

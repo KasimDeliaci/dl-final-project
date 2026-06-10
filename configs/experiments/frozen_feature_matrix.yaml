@@ -12,8 +12,27 @@ experiment_matrix:
     - vit_b16
     - swin_tiny
     - deit3_small
+  candidate_backbones:
+    - beit_base
   planned_comparisons:
     single_backbone: true
     pairwise_fusion: true
     three_backbone_fusion: true
-  status: scaffold_only
+  sprint2_scope:
+    included:
+      - single_backbone
+    excluded_until_sprint3:
+      - pairwise_fusion
+      - three_backbone_fusion
+  mlp_baseline:
+    hidden_dims:
+      - 512
+      - 256
+    dropout: 0.3
+    optimizer: adamw
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    early_stopping_patience: 6
+    class_imbalance: train_only_class_weighted_cross_entropy
+    feature_normalization: StandardScaler fit on train cache only
+  status: sprint2_single_backbone_implementation

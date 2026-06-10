@@ -1,0 +1,20 @@
+backbone:
+  id: beit_base
+  display_name: BEiT-Base
+  required_by_assignment: false
+  family: beit
+  library: timm
+  model_id: beit_base_patch16_224.in22k_ft_in22k_in1k
+  pretrained_source: ImageNet-22k pretraining/fine-tuning with ImageNet-1k fine-tuning via timm pretrained cfg
+  input_size: 224
+  feature_extraction_point: classifier-free average pooled patch-token representation using num_classes=0 and global_pool=avg
+  feature_dimension: 768
+  feature_source: frozen
+  fine_tuning_policy:
+    unfreeze_blocks: pending
+    learning_rate: pending
+  notes:
+    - Sprint 2 post-hoc candidate screening against DeiT III-Small for the third backbone slot.
+    - Average pooling is used because the pretrained checkpoint includes fc_norm weights for pooled features.
+    - Validation macro-F1 may be used for candidate selection; test set must remain unused.
+    - If selected, update the project backbone set before Sprint 3 fusion.

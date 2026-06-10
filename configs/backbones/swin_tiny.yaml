@@ -3,13 +3,16 @@ backbone:
   display_name: Swin Transformer
   required_by_assignment: true
   family: hierarchical_vision_transformer
-  pretrained_source: pending
-  input_size: pending
-  feature_extraction_point: pending
-  feature_dimension: pending
+  library: timm
+  model_id: swin_tiny_patch4_window7_224.ms_in1k
+  pretrained_source: ImageNet-1k pretrained weights via timm pretrained cfg
+  input_size: 224
+  feature_extraction_point: classifier-free average pooled final-stage representation using num_classes=0 and global_pool=avg
+  feature_dimension: 768
+  feature_source: frozen
   fine_tuning_policy:
     unfreeze_blocks: pending
     learning_rate: pending
   notes:
-    - Decide final stage pooling and feature vector extraction policy before implementation.
-
+    - Sprint 2 uses pooled final-stage features as the canonical Swin representation.
+    - Fine-tuning policy remains pending until Sprint 4.
