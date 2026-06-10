@@ -1,15 +1,26 @@
 # Source Directory
 
-Bu klasör ileride reusable Python package kodu için ayrılmıştır.
+Bu klasör reusable Python package kodu için ayrılmıştır.
 
-Şimdilik kod eklenmemiştir. İlk implementation başlamadan önce package adı, environment yönetimi ve modül sınırları ayrıca kararlaştırılmalıdır.
+Package adı:
 
-Beklenen ilerideki sorumluluklar:
+```text
+dl_final
+```
 
-- dataset loading,
-- split/audit helpers,
+Sprint 1 kapsamı:
+
+- HAM10000 metadata audit helpers,
+- image path resolution,
+- lesion-aware split generation,
+- split smoke checks,
+- lightweight report asset generation.
+
+Sonraki sorumluluklar:
+
 - transformer feature extraction adapters,
 - MLP classifier utilities,
 - evaluation metrics,
 - artifact writing helpers.
 
+Core model/training logic notebook içine gömülmemeli; burada veya `scripts/` entrypoint'leri arkasında tutulmalıdır.

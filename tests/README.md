@@ -1,13 +1,17 @@
 # Tests
 
-Bu klasör ileride testler için ayrılmıştır.
+Bu klasör testler için ayrılmıştır.
 
-İlk test kapsamı kod yazıldıktan sonra şu başlıklardan başlamalıdır:
+Sprint 1 test kapsamı:
 
 - metadata normalization,
 - lesion leakage prevention,
+- missing image detection,
+- unknown-label failure.
+
+Sonraki test kapsamı:
+
 - split alignment,
 - feature cache shape and sample order,
 - prediction dump schema,
 - metric calculation correctness.
-
