@@ -147,6 +147,10 @@ def save_representation_similarity_heatmap(
 ) -> Path:
     """Save a pairwise representation-similarity heatmap."""
 
+    import os
+
+    os.environ["MPLBACKEND"] = "Agg"
+
     import matplotlib
 
     matplotlib.use("Agg")

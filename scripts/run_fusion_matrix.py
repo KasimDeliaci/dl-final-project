@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 from collections.abc import Sequence
 from datetime import datetime
@@ -11,6 +12,8 @@ from itertools import combinations
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+
+os.environ["MPLBACKEND"] = "Agg"
 
 import matplotlib
 
