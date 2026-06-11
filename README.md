@@ -10,7 +10,8 @@ Zorunlu çizgi:
 
 - Vanilla ViT
 - Swin Transformer
-- DeiT III-Small
+- BEiT-Base as the forward third backbone after validation-only fusion analysis
+- DeiT III-Small as a screened/planned baseline kept for comparison
 - Her backbone'dan feature vector extraction
 - Concatenation fusion
 - Weighted fusion

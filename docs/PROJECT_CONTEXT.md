@@ -9,7 +9,8 @@ Bu proje, HAM10000 üzerinde çoklu transformer backbone feature extraction ve f
 Bu projenin assignment tarafından zorunlu tuttuğu ana çizgi:
 
 - Vanilla ViT, Swin Transformer ve ek transformer backbone kullanımı.
-- Bu repo için ek backbone kararı: DeiT III-Small.
+- Bu repo için ileri aşama ek backbone kararı: BEiT-Base.
+- DeiT III-Small planned/screened baseline olarak korunur.
 - Her backbone için classification head kaldırılarak feature vector extraction.
 - Concatenation fusion ve weighted fusion.
 - Single-backbone, two-backbone ve three-backbone karşılaştırmaları.
@@ -26,18 +27,22 @@ HAM10000 gibi sınıf dengesizliği yüksek, orta ölçekli bir dermoskopik gör
 3. concatenation ve weighted fusion ile ne kadar iyileşir,
 4. frozen feature extraction yerine son transformer blokları fine-tune edildiğinde nasıl değişir?
 
-## Başlangıç Backbone Seti
+## Backbone Seti
 
 Zorunlu:
 
 - Vanilla ViT
 - Swin Transformer
 
-Üçüncü backbone:
+Forward üçüncü backbone:
+
+- BEiT-Base
+
+Planned/screened baseline:
 
 - DeiT III-Small
 
-BEiT bu proje kapsamında kullanılmayacaktır. Gerekçe: BEiT masked image modeling ile farklı bir temsil çizgisi sunsa da HAM10000 özelinde DeiT III için daha doğrudan performans sinyali vardır; ayrıca DeiT III-Small Colab maliyeti açısından daha yönetilebilir bir üçüncü backbone sağlar.
+Başlangıçta üçüncü backbone DeiT III-Small olarak seçildi; Sprint 2 single-backbone validation sonucu da BEiT'ten yüksekti (`0.5017` vs `0.4759`). Ancak E2 frozen fusion matrix ve representation similarity diagnostic sonrasında ileri aşamalar için üçüncü backbone BEiT-Base olarak güncellendi. BEiT tek başına zayıf olsa da `ViT + Swin + BEiT concat` validation macro-F1 `0.6988` ile `ViT + Swin + DeiT concat` sonucunu (`0.6863`) geçti. Representation similarity analizi de BEiT'in ViT ve Swin'den daha farklı feature geometry taşıdığını gösterdi.
 
 ## Ana Deney Ekseni
 

@@ -80,19 +80,19 @@ Result note: Sprint 2 completed with full train/validation frozen feature caches
 
 ### E2 - Frozen Feature Fusion
 
-Status: planned
+Status: completed
 
 Question: Transformer backbone feature'ları concat veya weighted fusion ile tamamlayıcı sinyal üretir mi?
 
 Hypothesis: Pairwise veya three-backbone fusion, tek backbone'a göre macro-F1 artışı sağlayabilir; ancak bu artış feature complementarity'ye bağlıdır.
 
-Changed variable: Backbone combination and fusion method.
+Changed variable: Backbone combination and fusion method: `concat`, `weighted_learned_512`, `weighted_pca_384`.
 
-Fixed controls: Frozen feature caches, split, MLP recipe, evaluation protocol.
+Fixed controls: Sprint 2 frozen feature caches, canonical lesion-aware split, train-only StandardScaler, class-weighted MLP recipe, validation macro-F1 selection, and no test metric use.
 
 Selection rule: Fusion candidate selection validation macro-F1 ile yapılır.
 
-Expected failure mode: Concatenation feature dimension'ı büyütüp overfitting yaratabilir; weighted fusion zayıf backbone'u fazla bastırabilir veya tamamlayıcı sinyali kaybedebilir.
+Expected failure mode: Concatenation feature dimension'ı büyütüp overfitting yaratabilir; weighted learned fusion projection bottleneck oluşturabilir; weighted PCA compression information loss yaratabilir; zayıf veya redundant backbone'lar tamamlayıcı sinyali artırmayabilir.
 
 Required artifacts:
 
@@ -100,21 +100,31 @@ Required artifacts:
 - pairwise comparison table,
 - per-class metrics,
 - feature dimension log,
-- prediction dump.
+- prediction dump,
+- confusion matrix,
+- training history,
+- learned fusion weights for weighted runs,
+- PCA train-only metadata for `weighted_pca_384`.
 
 Report role: Feature fusion and complementarity analysis.
+
+Result note: Sprint 3 completed with a validation-only frozen fusion matrix over ViT, Swin Transformer, DeiT III-Small, and an E2 BEiT-expanded alternative. The planned ViT/Swin/DeiT matrix contained 12 runs. The BEiT-expanded matrix added 9 runs covering `vit_b16+beit_base`, `swin_tiny+beit_base`, and `vit_b16+swin_tiny+beit_base` with the same three fusion methods. Total E2 fusion runs: 21. The best planned ViT/Swin/DeiT run was `vit_b16+swin_tiny` with `concat`, reaching validation macro-F1 `0.6947`. The best BEiT-expanded run was `vit_b16+swin_tiny+beit_base` with `concat`, reaching validation macro-F1 `0.6988`. Both slightly exceeded the strongest Sprint 2 single-backbone baseline, ViT at `0.6924`, but the gains are small and should be framed as limited complementarity evidence rather than a decisive improvement. Test metrics were not computed.
+
+BEiT-expanded E2 result: BEiT-Base was evaluated as an alternative third backbone inside E2 because its representation similarity diagnostic suggested lower similarity to ViT and Swin. BEiT pairwise runs did not exceed ViT single: `vit_b16+beit_base concat` reached `0.6556` macro-F1 and `swin_tiny+beit_base concat` reached `0.6381`. However, `vit_b16+swin_tiny+beit_base concat` reached `0.6988`, suggesting BEiT may add limited complementary signal when combined with both stronger backbones despite being weak as a single-backbone candidate.
+
+Representation similarity diagnostic: Validation feature caches were analyzed with train-only scaling and sample-cosine RSA Pearson correlation. BEiT showed lower representation similarity with ViT (`0.4393`) and Swin (`0.2874`) than the canonical ViT+Swin pair (`0.5942`). The average pairwise representation complementarity for `vit_b16+swin_tiny+beit_base` was `0.5597`, higher than `vit_b16+swin_tiny` at `0.4058`. This supports a cautious interpretation that BEiT can be weak as a standalone classifier feature while still adding complementary structure in concat fusion. Test split was not used.
 
 ### E3 - Fine-Tuning Last Transformer Blocks
 
 Status: planned
 
-Question: Frozen feature extraction yerine son transformer bloklarını fine-tune etmek HAM10000 temsillerini iyileştirir mi?
+Question: Forward backbone setinde son transformer bloklarını fine-tune etmek HAM10000 temsillerini iyileştirir mi?
 
 Hypothesis: Son transformer bloklarının kontrollü fine-tuning'i domain-specific dermoscopic representation kalitesini artırabilir; ancak küçük/dengesiz dataset nedeniyle overfitting riski yüksektir.
 
-Changed variable: Transfer learning policy.
+Changed variable: Transfer learning policy over the forward backbone set `vit_b16`, `swin_tiny`, `beit_base`.
 
-Fixed controls: Split, backbone family, classifier evaluation protocol.
+Fixed controls: Canonical lesion-aware split, E2-selected forward backbone set, classifier evaluation protocol, validation-only checkpoint/model selection.
 
 Selection rule: Fine-tuned checkpoint validation macro-F1 ile seçilir.
 
@@ -131,6 +141,37 @@ Required artifacts:
 - prediction dump.
 
 Report role: Transfer learning comparison.
+
+Planning note: `deit3_small` remains a screened/planned baseline from E1/E2, but Sprint 4 fine-tuning scope uses `beit_base` as the third backbone because E2 validation fusion and representation similarity diagnostics favored BEiT complementarity.
+
+### E2b - MLP Capacity Diagnostic for Frozen Features
+
+Status: completed
+
+Question: Frozen feature fusion sonuçları mevcut modest MLP classifier kapasitesiyle mi sınırlı kalıyor?
+
+Hypothesis: Daha geniş veya daha düzenlileştirilmiş MLP classifier, özellikle high-dimensional concat fusion koşullarında validation macro-F1'i artırabilir; ancak single-backbone ViT de benzer şekilde artarsa fusion complementarity yorumu değişmeyebilir.
+
+Changed variable: MLP hidden dimensions, dropout, learning rate, weight decay, and early-stopping patience.
+
+Fixed controls: Frozen feature caches, canonical lesion-aware split, train-only StandardScaler, train-only class-weighted cross entropy, selected representative feature configurations, validation-only selection, no test metrics.
+
+Selection rule: Diagnostic variants validation macro-F1 ile karşılaştırılır. Test seti kullanılmaz.
+
+Expected failure mode: Daha güçlü MLP high-dimensional concat features üzerinde overfit edebilir veya validation macro-F1'i artırmadan training instability yaratabilir.
+
+Required artifacts:
+
+- run configs,
+- metrics summaries,
+- per-class metrics,
+- prediction dumps,
+- training histories,
+- diagnostic comparison table.
+
+Report role: Classifier capacity sensitivity and robustness check for E2 fusion conclusions.
+
+Result note: E2b completed as a validation-only MLP capacity diagnostic over representative frozen feature configurations. Stronger MLP variants did not improve ViT single-backbone validation macro-F1 over the original baseline (`0.6924`). They substantially improved `vit_b16+swin_tiny concat`, with the `deep_reg` variant reaching validation macro-F1 `0.7262`. `vit_b16+swin_tiny+beit_base concat` also improved, reaching `0.7159` with `wide_reg`, but did not exceed the stronger `vit_b16+swin_tiny concat` result. `vit_b16+swin_tiny+deit3_small concat` did not improve meaningfully over its baseline. This indicates that frozen fusion conclusions are sensitive to MLP capacity, and that BEiT remains a stronger third-backbone candidate than DeiT under this probe, while the best frozen concat configuration under stronger MLP is the ViT+Swin pair. Test metrics were not computed.
 
 ### E4 - Final Model Selection and Audit
 

@@ -167,6 +167,162 @@ artifacts/report_assets/tables/single_backbone_frozen_per_class_metrics.csv
 artifacts/report_assets/figures/frozen_single_backbone_macro_f1.png
 ```
 
+## Sprint 3 Commands
+
+Sprint 3 unit and smoke tests:
+
+```bash
+PYTHONPATH=src uv run python -m pytest tests/test_sprint2_features.py tests/test_sprint3_fusion.py
+```
+
+One-run real-cache smoke test:
+
+```bash
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --backbones vit_b16 swin_tiny \
+  --fusion-methods concat \
+  --max-runs 1 \
+  --epochs 1 \
+  --batch-size 256 \
+  --device cpu \
+  --run-root artifacts/runs_smoke \
+  --tables-dir artifacts/report_assets_smoke/tables \
+  --figures-dir artifacts/report_assets_smoke/figures
+```
+
+Full validation-only frozen fusion matrix:
+
+```bash
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --batch-size 128 \
+  --device cpu
+```
+
+BEiT-expanded E2 matrix after the planned ViT/Swin/DeiT matrix:
+
+```bash
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --only-combination vit_b16 beit_base \
+  --fusion-methods concat weighted_learned_512 weighted_pca_384 \
+  --batch-size 128 \
+  --device cpu \
+  --run-tag beit_matrix
+
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --only-combination swin_tiny beit_base \
+  --fusion-methods concat weighted_learned_512 weighted_pca_384 \
+  --batch-size 128 \
+  --device cpu \
+  --run-tag beit_matrix
+
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --only-combination vit_b16 swin_tiny beit_base \
+  --fusion-methods concat weighted_learned_512 weighted_pca_384 \
+  --batch-size 128 \
+  --device cpu \
+  --run-tag beit_matrix
+```
+
+Representation similarity diagnostic for E2:
+
+```bash
+PYTHONPATH=src uv run python scripts/analyze_representation_similarity.py \
+  --backbones vit_b16 swin_tiny deit3_small beit_base \
+  --split val \
+  --max-samples 1504
+```
+
+Creates:
+
+```text
+artifacts/report_assets/tables/frozen_representation_similarity_val.csv
+artifacts/report_assets/tables/frozen_fusion_complementarity_val.csv
+artifacts/report_assets/tables/frozen_representation_similarity_val.json
+artifacts/report_assets/figures/frozen_representation_similarity_val.png
+```
+
+E2b MLP capacity diagnostic:
+
+```bash
+# ViT single stronger MLP probes
+PYTHONPATH=src uv run python scripts/train_mlp.py \
+  --backbones vit_b16 \
+  --hidden-dims 1024 512 256 \
+  --dropout 0.4 \
+  --learning-rate 0.0007 \
+  --weight-decay 0.0001 \
+  --epochs 50 \
+  --early-stopping-patience 8 \
+  --run-tag e2b_wide
+
+PYTHONPATH=src uv run python scripts/train_mlp.py \
+  --backbones vit_b16 \
+  --hidden-dims 1024 512 256 \
+  --dropout 0.5 \
+  --learning-rate 0.0005 \
+  --weight-decay 0.0003 \
+  --epochs 50 \
+  --early-stopping-patience 8 \
+  --run-tag e2b_wide_reg
+
+PYTHONPATH=src uv run python scripts/train_mlp.py \
+  --backbones vit_b16 \
+  --hidden-dims 2048 1024 512 \
+  --dropout 0.5 \
+  --learning-rate 0.0003 \
+  --weight-decay 0.0005 \
+  --epochs 60 \
+  --early-stopping-patience 10 \
+  --run-tag e2b_deep_reg
+```
+
+The same three MLP variants were run for representative concat fusion conditions:
+
+```text
+vit_b16 + swin_tiny
+vit_b16 + swin_tiny + deit3_small
+vit_b16 + swin_tiny + beit_base
+```
+
+Creates:
+
+```text
+artifacts/report_assets/tables/e2b_mlp_capacity_diagnostic.csv
+```
+
+Quality checks:
+
+```bash
+PYTHONPATH=src uv run ruff check .
+PYTHONPATH=src uv run python -m pytest tests/test_dataset_sprint1.py tests/test_sprint2_features.py tests/test_sprint3_fusion.py tests/test_representation_complementarity.py
+```
+
+Creates:
+
+```text
+artifacts/runs/*_s3_frozen_*_concat_mlp_seed42/
+artifacts/runs/*_s3_frozen_*_weightedlearned512_mlp_seed42/
+artifacts/runs/*_s3_frozen_*_weightedpca384_mlp_seed42/
+artifacts/runs/s3_frozen_fusion_manifest.json
+artifacts/report_assets/tables/frozen_fusion_results.csv
+artifacts/report_assets/tables/frozen_fusion_per_class_metrics.csv
+artifacts/report_assets/tables/frozen_fusion_weight_summary.csv
+artifacts/report_assets/tables/frozen_fusion_vs_single_validation.csv
+artifacts/report_assets/figures/frozen_fusion_macro_f1.png
+```
+
+Sprint 3 reads train/validation caches only and does not compute test metrics. Model, checkpoint, fusion method, and fusion-weight interpretation use validation macro-F1.
+
+Sprint 4 forward backbone set after E2:
+
+```text
+vit_b16
+swin_tiny
+beit_base
+```
+
+`deit3_small` remains a planned/screened baseline from Sprint 2-3 and is not carried into the fine-tuning compute budget unless a later decision supersedes D021.
+
 ## Colab Commands
 
 GPU gerektiren full transformer extraction ve fine-tuning işleri Sprint 2+ sırasında Colab'de çalıştırılabilir. Büyük artifact akışı için Drive root:

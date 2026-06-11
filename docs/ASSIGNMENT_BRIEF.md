@@ -18,7 +18,9 @@ beklenmektedir.
 Bu proje için kod yazmadan önce sabitlenen zorunlu çizgi:
 
 - Dataset: HAM10000, public ve çok sınıflı dermoscopic image classification benchmark.
-- Backbone seti: Vanilla ViT, Swin Transformer, DeiT III-Small.
+- Backbone seti: Vanilla ViT, Swin Transformer ve ek transformer backbone.
+- Başlangıç ek backbone'u: DeiT III-Small.
+- E2 sonrası ileri aşama ek backbone'u: BEiT-Base.
 - Feature extraction: Her backbone'dan feature vector alınacak; classification head kullanılmayacak.
 - Fusion yöntemleri: Concatenation ve weighted fusion.
 - Classifier: Single veya fused feature vector üzerinde MLP classifier.
@@ -50,7 +52,7 @@ Belgede iki model özellikle istenmiştir:
 - Vanilla ViT
 - Swin Transformer
 
-Ek model kullanımı bonus getirebilir. Bu proje için üçüncü backbone olarak `DeiT III-Small` seçilmiştir. BEiT kapsam dışı bırakılmıştır; gerekçe `docs/DECISIONS.md` içinde kayıtlıdır.
+Ek model kullanımı bonus getirebilir. Bu proje için başlangıçta üçüncü backbone olarak `DeiT III-Small` seçilmiştir. Sprint 2 single-backbone screening bu seçimi desteklemiştir; ancak E2 frozen fusion matrix ve representation similarity diagnostic sonrasında ileri aşamalar için üçüncü backbone `BEiT-Base` olarak güncellenmiştir. Gerekçe `docs/DECISIONS.md` içinde D021 olarak kayıtlıdır.
 
 ## Zorunlu Feature Extraction
 
@@ -109,16 +111,20 @@ Backbone baselines:
   - ViT single
   - Swin single
   - DeiT III-Small single
+  - BEiT-Base screening single
 
 Frozen feature fusion:
   - ViT + Swin
   - ViT + DeiT III-Small
   - Swin + DeiT III-Small
   - ViT + Swin + DeiT III-Small
+  - E2 expanded: ViT + BEiT-Base
+  - E2 expanded: Swin + BEiT-Base
+  - E2 expanded: ViT + Swin + BEiT-Base
   - Her kombinasyon için concat ve weighted fusion
 
 Fine-tuning comparison:
-  - Her backbone için son transformer blokları fine-tuning
+  - Forward set için son transformer blokları fine-tuning: ViT, Swin, BEiT-Base
   - Compute izin verirse temsilci pairwise ve three-backbone fusion
 
 Final audit:

@@ -13,8 +13,8 @@ Başlangıç kategorileri:
 
 - Vanilla ViT.
 - Swin Transformer.
-- DeiT III as selected third transformer family.
-- BEiT as excluded alternative and masked image modeling reference.
+- DeiT III as planned/screened third transformer family.
+- BEiT as forward third transformer after E2 complementarity evidence and masked image modeling reference.
 
 ## HAM10000 and Transformer-Based Skin Lesion Classification
 

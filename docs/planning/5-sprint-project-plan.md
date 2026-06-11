@@ -4,6 +4,10 @@ Bu plan, `dl-final-projesi-2026.docx` gereksinimlerini HAM10000 üzerinde transf
 
 Bu belge overview seviyesindedir. Her sprint başlamadan önce `docs/exec-plans/active/` altında o sprint için daha dar, uygulanabilir execution plan açılmalıdır. Sprint tamamlanınca plan `docs/exec-plans/completed/` altına taşınmalı ve `docs/report_notes/` altında kısa sonuç notu yazılmalıdır.
 
+## Post-E2 Backbone Update
+
+Başlangıç planında üçüncü backbone `DeiT III-Small` idi. Sprint 2 single-backbone screening bu seçimi destekledi; ancak E2 frozen fusion matrix ve representation similarity diagnostic sonrasında ileri aşamalar için üçüncü backbone `BEiT-Base` olarak güncellenmiştir. Sprint 4 fine-tuning scope'u `Vanilla ViT`, `Swin Transformer` ve `BEiT-Base` üzerinden ilerlemelidir. `DeiT III-Small`, planned/screened baseline olarak raporda kalır ve E2 karşılaştırmalarında kullanılır; ancak fine-tuning compute budget'ına taşınmaz.
+
 ## Project Contract
 
 Sabit kapsam:

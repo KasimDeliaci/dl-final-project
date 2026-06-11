@@ -64,7 +64,17 @@ BEiT-Base sonucu:
 |---|---:|---:|---:|---:|---:|---:|---:|
 | BEiT-Base | 768 | 19 | 0.6509 | 0.4759 | 0.4278 | 0.6071 | 0.6833 |
 
-BEiT-Base, aynı MLP recipe altında DeiT III-Small'ın validation macro-F1 değerini geçememiştir (`0.4759` vs `0.5017`). Bu nedenle canonical üçüncü backbone DeiT III-Small olarak korunmuştur. Bu karar validation metric üzerinden verilmiştir; test split bu seçim için kullanılmamıştır.
+BEiT-Base, aynı MLP recipe altında DeiT III-Small'ın validation macro-F1 değerini geçememiştir (`0.4759` vs `0.5017`). Bu nedenle Sprint 2 single-backbone screening aşamasında üçüncü backbone DeiT III-Small olarak korunmuştur. Bu karar validation metric üzerinden verilmiştir; test split bu seçim için kullanılmamıştır.
+
+## Önceki CNN Çalışmasıyla Karşılaştırmalı Yorum
+
+Bu sonuçlar, önceki `dl-assignment` CNN projesindeki frozen feature extraction aşamasıyla karşılaştırıldığında önemli bir mimari fark gösterir. Önceki çalışmada ResNet50, EfficientNetB0 ve MobileNetV2 frozen feature extractor olarak kullanılmış; default class-weighted MLP koşulunda en güçlü single-backbone sonuç ResNet50 ile test macro-F1 `0.531` olmuştur. Aynı çalışmada MLP hyperparameter sensitivity denemeleri EfficientNetB0 için macro-F1'i `0.5605` seviyesine çıkarabilmiş, ancak bu sonuç validation-selected final model olarak değil diagnostic ablation olarak yorumlanmıştır.
+
+Bu final projesinde ise frozen transformer temsilleri, daha feature fusion veya fine-tuning uygulanmadan daha yüksek bir başlangıç noktası üretmiştir. Vanilla ViT single-backbone validation macro-F1 `0.6924` değerine ulaşmıştır. Bu değer, eski CNN projesindeki en iyi frozen single-backbone skorundan (`0.531`) belirgin biçimde yüksektir ve hatta eski CNN projesindeki canonical fine-tuned three-backbone concat sonucuna (`0.706` macro-F1) oldukça yakındır. Bu karşılaştırma doğrudan "aynı test koşulu" gibi okunmamalıdır; eski notlardaki sayılar test macro-F1, bu projedeki sayılar ise validation macro-F1'dir. Yine de metodolojik olarak güçlü bir sinyal verir: transformer backbone'ları frozen halde bile HAM10000 benchmark dermoscopic image classification için CNN frozen feature'larına göre daha ayırt edici temsil üretmektedir.
+
+Rapor dilinde bu fark şöyle çerçevelenebilir:
+
+> Önceki CNN tabanlı çalışmada frozen feature extraction, fusion ve fine-tuning aşamaları için daha düşük bir başlangıç noktası oluşturmuştu; en güçlü default frozen single-backbone sonuç ResNet50 ile macro-F1 `0.531` seviyesindeydi. Bu projede ise Vanilla ViT, frozen single-backbone koşulunda validation macro-F1 `0.6924` değerine ulaşarak çok daha güçlü bir representation baseline sağlamıştır. Bu durum, transformer tabanlı pretrained representation'ların aynı benchmark üzerinde daha yüksek başlangıç temsil gücü sunduğunu göstermektedir. Sayısal karşılaştırma farklı validation/test protokolleri nedeniyle doğrudan leaderboard karşılaştırması olarak değil, mimari davranış farkı olarak yorumlanmalıdır.
 
 ## Rapor İçin Kullanılabilecek Metodoloji Paragrafı
 
@@ -126,3 +136,7 @@ Verification evidence:
 - MLP recipe backbone'lar arasında sabit tutulmuştur; daha geniş hyperparameter search ayrı bir ablation olarak ele alınmalıdır.
 - Minority-class validation support sınırlıdır; özellikle `df` ve `vasc` sonuçları support sayıları görünür tutularak yorumlanmalıdır.
 - Sonuçlar benchmark dermoscopic image classification kapsamındadır; klinik teşhis veya deployment iddiası üretmez.
+
+## Post-E2 Update
+
+Bu nottaki DeiT III-Small kararı, Sprint 2 single-backbone validation screening bağlamında doğrudur. E2 frozen fusion matrix ve representation similarity diagnostic sonrasında ileri aşamalar için üçüncü backbone BEiT-Base olarak güncellenmiştir. Bu değişiklik test seti kullanılmadan, validation-only fusion complementarity evidence ile yapılmıştır. DeiT III-Small raporda planned/screened baseline olarak kalır; Sprint 4 forward set `vit_b16`, `swin_tiny`, `beit_base` olacaktır.
