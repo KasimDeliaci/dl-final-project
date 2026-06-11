@@ -19,6 +19,8 @@ from dl_final.features.cache import backbone_cache_dir
 from dl_final.models.backbones import default_finetuning_policy, supported_backbones
 from dl_final.training.finetune import extract_finetuned_feature_cache, finetune_backbone
 
+EXPECTED_FULL_SPLIT_COUNTS = {"train": 7008, "val": 1504}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -104,6 +106,10 @@ def main() -> None:
         max_samples=args.limit_per_split,
         train=False,
         seed=seed,
+    )
+    _validate_full_split_counts(
+        {"train": train_loader, "val": val_loader},
+        limit_per_split=args.limit_per_split,
     )
     extraction_loaders = {
         "train": _create_loader(
@@ -249,6 +255,23 @@ def _create_loader(
         num_workers=num_workers,
         pin_memory=torch.cuda.is_available(),
     )
+
+
+def _validate_full_split_counts(
+    loaders: dict[str, DataLoader],
+    *,
+    limit_per_split: int | None,
+) -> None:
+    if limit_per_split is not None:
+        return
+    for split, expected in EXPECTED_FULL_SPLIT_COUNTS.items():
+        actual = len(loaders[split].dataset)
+        if actual != expected:
+            raise ValueError(
+                f"{split} split has {actual} rows; expected {expected}. "
+                "Regenerate the canonical Sprint 4 split before fine-tuning. "
+                "In Colab, an old dl-assignment bundle may have overwritten data/splits."
+            )
 
 
 def _resolve_device(value: str | None) -> torch.device:
