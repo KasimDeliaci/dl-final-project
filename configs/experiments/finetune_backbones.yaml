@@ -6,7 +6,13 @@ experiment:
   planned_backbones:
     - vit_b16
     - swin_tiny
+    - beit_base
+  screened_not_forward:
     - deit3_small
+  selection_basis:
+    - Sprint 2 single-backbone validation favored DeiT over BEiT.
+    - E2 frozen fusion and representation similarity favored BEiT as the more complementary third backbone.
+    - Sprint 4 uses validation-selected forward set only; test remains audit-only.
   transfer_learning_policy:
     frozen_baseline_required: true
     unfreeze_last_transformer_blocks: pending

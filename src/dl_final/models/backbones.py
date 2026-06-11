@@ -65,7 +65,7 @@ BACKBONE_SPECS: dict[str, BackboneSpec] = {
     ),
 }
 
-CANONICAL_BACKBONES = ("vit_b16", "swin_tiny", "deit3_small")
+CANONICAL_BACKBONES = ("vit_b16", "swin_tiny", "beit_base")
 
 
 def supported_backbones(*, include_candidates: bool = False) -> list[str]:

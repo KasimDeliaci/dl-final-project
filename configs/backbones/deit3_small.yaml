@@ -14,7 +14,8 @@ backbone:
     unfreeze_blocks: pending
     learning_rate: pending
   notes:
-    - Selected third transformer backbone for the project.
-    - Chosen over BEiT because HAM10000-specific literature support is stronger for DeiT III.
+    - Initially selected third transformer backbone for Sprint 2 and the planned E2 matrix.
+    - Chosen over BEiT before E2 because Sprint 2 single-backbone validation was stronger.
+    - Not carried forward into Sprint 4 after E2 fusion complementarity favored BEiT.
     - Small variant is preferred over Base to keep Colab cost manageable.
     - Sprint 2 uses CLS token features as the canonical single-backbone representation.

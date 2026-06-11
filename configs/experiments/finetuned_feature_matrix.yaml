@@ -11,5 +11,10 @@ experiment_matrix:
     single_backbone: true
     representative_pairwise_fusion: true
     representative_three_backbone_fusion: true
+  forward_backbones:
+    - vit_b16
+    - swin_tiny
+    - beit_base
+  screened_not_forward:
+    - deit3_small
   status: scaffold_only
-

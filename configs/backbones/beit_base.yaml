@@ -15,6 +15,7 @@ backbone:
     learning_rate: pending
   notes:
     - Sprint 2 post-hoc candidate screening against DeiT III-Small for the third backbone slot.
+    - Selected as the Sprint 4 forward third backbone after E2 fusion complementarity.
     - Average pooling is used because the pretrained checkpoint includes fc_norm weights for pooled features.
-    - Validation macro-F1 may be used for candidate selection; test set must remain unused.
-    - If selected, update the project backbone set before Sprint 3 fusion.
+    - Validation macro-F1 and representation similarity diagnostics may be used for candidate selection; test set must remain unused.
+    - BEiT is weak as a single frozen feature source but useful in ViT+Swin+BEiT concat.

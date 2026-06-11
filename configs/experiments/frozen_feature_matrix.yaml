@@ -14,6 +14,12 @@ experiment_matrix:
     - deit3_small
   candidate_backbones:
     - beit_base
+  selected_forward_backbones_after_e2:
+    - vit_b16
+    - swin_tiny
+    - beit_base
+  screened_not_forward_after_e2:
+    - deit3_small
   planned_comparisons:
     single_backbone: true
     pairwise_fusion: true
@@ -35,4 +41,4 @@ experiment_matrix:
     early_stopping_patience: 6
     class_imbalance: train_only_class_weighted_cross_entropy
     feature_normalization: StandardScaler fit on train cache only
-  status: sprint2_single_backbone_implementation
+  status: e2_expanded_fusion_completed
