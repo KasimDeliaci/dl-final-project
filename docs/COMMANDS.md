@@ -408,6 +408,72 @@ PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
   --run-tag s4_deep_reg
 ```
 
+Sprint 4b / E3b downstream MLP multi-seed robustness diagnostic over fixed cached features:
+
+```bash
+for seed in 7 13 42 101 202; do
+  PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+    --feature-source finetuned \
+    --only-combination vit_b16 swin_tiny beit_base \
+    --fusion-methods concat \
+    --batch-size 128 \
+    --device cpu \
+    --seed "$seed" \
+    --experiment-id E3b \
+    --run-tag s4b_multiseed_cpu_triple \
+    --skip-export
+
+  PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+    --feature-source finetuned \
+    --only-combination vit_b16 swin_tiny \
+    --fusion-methods concat \
+    --batch-size 128 \
+    --device cpu \
+    --seed "$seed" \
+    --experiment-id E3b \
+    --run-tag s4b_multiseed_cpu_pair \
+    --skip-export
+
+  PYTHONPATH=src uv run python scripts/train_mlp.py \
+    --feature-source finetuned \
+    --backbones vit_b16 \
+    --batch-size 128 \
+    --device cpu \
+    --seed "$seed" \
+    --experiment-id E3b \
+    --run-tag s4b_multiseed_cpu_vit \
+    --tables-dir artifacts/report_assets_s4b/tables \
+    --figures-dir artifacts/report_assets_s4b/figures
+
+  PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+    --feature-source frozen \
+    --only-combination vit_b16 swin_tiny \
+    --fusion-methods concat \
+    --hidden-dims 2048 1024 512 \
+    --dropout 0.5 \
+    --learning-rate 0.0003 \
+    --weight-decay 0.0005 \
+    --epochs 60 \
+    --early-stopping-patience 10 \
+    --batch-size 128 \
+    --device cpu \
+    --seed "$seed" \
+    --experiment-id E3b \
+    --run-tag s4b_multiseed_cpu_frozen_deep_reg \
+    --skip-export
+done
+
+PYTHONPATH=src uv run python scripts/summarize_s4b_multiseed.py
+```
+
+Creates:
+
+```text
+artifacts/runs/*s4b_multiseed_cpu*/
+artifacts/report_assets/tables/s4b_multiseed_cpu_diagnostic_results.csv
+artifacts/report_assets/tables/s4b_multiseed_cpu_diagnostic_summary.csv
+```
+
 Quality checks:
 
 ```bash

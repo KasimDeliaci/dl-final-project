@@ -55,13 +55,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--early-stopping-patience", type=int, default=6)
     parser.add_argument("--no-class-weights", action="store_true")
     parser.add_argument("--run-tag", default=None)
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--experiment-id", default=None)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     dataset_config = load_dataset_config(args.dataset_config)["dataset"]
-    seed = int(dataset_config.get("seed", 42))
+    seed = int(args.seed if args.seed is not None else dataset_config.get("seed", 42))
     _seed_everything(seed)
     device = _resolve_device(args.device)
 
@@ -168,7 +170,8 @@ def run_single_backbone(
     runtime_seconds = round(perf_counter() - started, 4)
     run_config = {
         "run_id": run_id,
-        "experiment_id": "E3" if args.feature_source == "finetuned" else "E1",
+        "experiment_id": args.experiment_id
+        or ("E3" if args.feature_source == "finetuned" else "E1"),
         "seed": seed,
         "dataset": dataset_config["name"],
         "feature_source": args.feature_source,

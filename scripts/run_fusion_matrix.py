@@ -87,6 +87,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--early-stopping-patience", type=int, default=6)
     parser.add_argument("--no-class-weights", action="store_true")
     parser.add_argument("--run-tag", default=None)
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--experiment-id", default=None)
     parser.add_argument("--skip-export", action="store_true")
     return parser.parse_args()
 
@@ -130,7 +132,7 @@ def expand_fusion_run_matrix(
 def main() -> None:
     args = parse_args()
     dataset_config = load_dataset_config(args.dataset_config)["dataset"]
-    seed = int(dataset_config.get("seed", 42))
+    seed = int(args.seed if args.seed is not None else dataset_config.get("seed", 42))
     _seed_everything(seed)
     device = _resolve_device(args.device)
     run_specs = expand_fusion_run_matrix(
@@ -156,7 +158,7 @@ def main() -> None:
         completed.append({**spec, "run_dir": str(run_dir)})
 
     manifest = {
-        "experiment_id": _experiment_id_for_source(args.feature_source),
+        "experiment_id": _experiment_id_for_source(args.feature_source, args.experiment_id),
         "feature_source": args.feature_source,
         "seed": seed,
         "selection_metric": "validation_macro_f1",
@@ -298,7 +300,7 @@ def run_fusion_experiment(
     runtime_seconds = round(perf_counter() - started, 4)
     run_config = {
         "run_id": run_id,
-        "experiment_id": _experiment_id_for_source(args.feature_source),
+        "experiment_id": _experiment_id_for_source(args.feature_source, args.experiment_id),
         "seed": seed,
         "dataset": dataset_config["name"],
         "feature_source": args.feature_source,
@@ -708,7 +710,9 @@ def _fusion_method_alias(method: str) -> str:
     return method
 
 
-def _experiment_id_for_source(feature_source: str) -> str:
+def _experiment_id_for_source(feature_source: str, override: str | None = None) -> str:
+    if override:
+        return override
     return "E3" if feature_source == "finetuned" else "E2"
 
 

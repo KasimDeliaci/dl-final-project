@@ -177,6 +177,32 @@ Report role: Classifier capacity sensitivity and robustness check for E2 fusion 
 
 Result note: E2b completed as a validation-only MLP capacity diagnostic over representative frozen feature configurations. Stronger MLP variants did not improve ViT single-backbone validation macro-F1 over the original baseline (`0.6924`). They substantially improved `vit_b16+swin_tiny concat`, with the `deep_reg` variant reaching validation macro-F1 `0.7262`. `vit_b16+swin_tiny+beit_base concat` also improved, reaching `0.7159` with `wide_reg`, but did not exceed the stronger `vit_b16+swin_tiny concat` result. `vit_b16+swin_tiny+deit3_small concat` did not improve meaningfully over its baseline. This indicates that frozen fusion conclusions are sensitive to MLP capacity, and that BEiT remains a stronger third-backbone candidate than DeiT under this probe, while the best frozen concat configuration under stronger MLP is the ViT+Swin pair. Test metrics were not computed.
 
+### E3b - Downstream MLP Multi-Seed Robustness Diagnostic
+
+Status: completed
+
+Question: Sprint 4'teki cached-feature MLP/fusion sonuçları downstream MLP initialization seed'ine ne kadar duyarlı?
+
+Hypothesis: Fine-tuned concat fusion, tek seed sonucuna göre validation-best görünmektedir; ancak küçük marginler nedeniyle downstream MLP seed variance sonuç yorumunu etkileyebilir.
+
+Changed variable: Downstream MLP random seed over cached features. Fine-tuned feature caches and frozen feature caches are fixed.
+
+Fixed controls: Canonical train/validation split, cached feature tensors, train-only StandardScaler, train-only class weights, validation-only selection, no test metrics, CPU device for comparability with the original E2b frozen diagnostic.
+
+Selection rule: Diagnostic only; final model selection is not changed by this run alone. Summary statistics are reported as mean/std/min/max validation macro-F1 over seeds `7`, `13`, `42`, `101`, and `202`.
+
+Expected failure mode: Validation macro-F1 differences may be seed-sensitive, especially when comparing close candidates such as `0.7298` and `0.7262`.
+
+Required artifacts:
+
+- `artifacts/report_assets/tables/s4b_multiseed_cpu_diagnostic_results.csv`,
+- `artifacts/report_assets/tables/s4b_multiseed_cpu_diagnostic_summary.csv`,
+- per-run validation metrics, prediction dumps, training histories, and run configs under `artifacts/runs/*s4b_multiseed_cpu*`.
+
+Report role: Robustness check for Sprint 4 fine-tuned feature conclusions.
+
+Result note: E3b completed as a CPU validation-only downstream MLP robustness diagnostic. Over seeds `7,13,42,101,202`, fine-tuned `vit_b16+swin_tiny+beit_base concat` had the highest mean validation macro-F1 (`0.7246 ± 0.0143`, min `0.7032`, max `0.7413`). Fine-tuned `vit_b16+swin_tiny concat` averaged `0.7160 ± 0.0085`. Frozen `vit_b16+swin_tiny concat deep_reg` averaged `0.7077 ± 0.0124`; the original seed-42 E2b value `0.7262` was reproduced on CPU but appears to be near the high end of the observed seed range. Fine-tuned ViT single averaged `0.6801 ± 0.0084`, supporting the conclusion that ViT single-backbone fine-tuning is mixed and does not robustly exceed the frozen ViT baseline. Test metrics were not computed.
+
 ### E4 - Final Model Selection and Audit
 
 Status: planned
