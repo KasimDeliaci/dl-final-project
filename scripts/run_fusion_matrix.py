@@ -153,14 +153,15 @@ def main() -> None:
         completed.append({**spec, "run_dir": str(run_dir)})
 
     manifest = {
-        "experiment_id": "E2",
+        "experiment_id": _experiment_id_for_source(args.feature_source),
         "feature_source": args.feature_source,
         "seed": seed,
         "selection_metric": "validation_macro_f1",
-        "test_policy": "not_used_in_sprint3",
+        "test_policy": _test_policy_for_source(args.feature_source),
         "completed_runs": completed,
     }
-    manifest_path = Path(args.run_root) / "s3_frozen_fusion_manifest.json"
+    manifest_name = f"{args.feature_source}_fusion_manifest.json"
+    manifest_path = Path(args.run_root) / manifest_name
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
@@ -294,7 +295,7 @@ def run_fusion_experiment(
     runtime_seconds = round(perf_counter() - started, 4)
     run_config = {
         "run_id": run_id,
-        "experiment_id": "E2",
+        "experiment_id": _experiment_id_for_source(args.feature_source),
         "seed": seed,
         "dataset": dataset_config["name"],
         "feature_source": args.feature_source,
@@ -320,7 +321,7 @@ def run_fusion_experiment(
         "dropout": args.dropout,
         "early_stopping_patience": args.early_stopping_patience,
         "selection_metric": "validation_macro_f1",
-        "test_policy": "not_used_in_sprint3",
+        "test_policy": _test_policy_for_source(args.feature_source),
         "feature_cache_dirs": [
             str(Path(args.feature_root) / str(dataset_config["name"]) / args.feature_source / b)
             for b in backbones
@@ -355,7 +356,7 @@ def run_fusion_experiment(
         "fusion_input_dim": expected_concat_dim(backbones),
         "fusion_output_dim": fusion_output_dim,
         "selection_metric": "validation_macro_f1",
-        "test_policy": "not_used_in_sprint3",
+        "test_policy": _test_policy_for_source(args.feature_source),
     }
     fusion_weights = extract_fusion_weights(model, backbones)
     if fusion_weights:
@@ -595,7 +596,7 @@ def export_fusion_report_assets(
             continue
         metrics = pd.read_csv(metrics_path).iloc[0].to_dict()
         row = {**config, **metrics}
-        if config.get("experiment_id") == "E2":
+        if config.get("experiment_id") in {"E2", "E3"}:
             fusion_rows.append(row)
             per_class_path = config_path.parent / "per_class_metrics.csv"
             if per_class_path.exists():
@@ -615,16 +616,17 @@ def export_fusion_report_assets(
         raise FileNotFoundError("No Sprint 3 fusion run artifacts found.")
 
     fusion = pd.DataFrame(fusion_rows).sort_values("macro_f1", ascending=False)
-    fusion_results_path = table_root / "frozen_fusion_results.csv"
+    prefix = "frozen" if feature_source == "frozen" else feature_source
+    fusion_results_path = table_root / f"{prefix}_fusion_results.csv"
     fusion.to_csv(fusion_results_path, index=False)
 
-    per_class_path = table_root / "frozen_fusion_per_class_metrics.csv"
+    per_class_path = table_root / f"{prefix}_fusion_per_class_metrics.csv"
     if per_class_frames:
         pd.concat(per_class_frames, ignore_index=True).to_csv(per_class_path, index=False)
     else:
         pd.DataFrame().to_csv(per_class_path, index=False)
 
-    weight_summary_path = table_root / "frozen_fusion_weight_summary.csv"
+    weight_summary_path = table_root / f"{prefix}_fusion_weight_summary.csv"
     if weight_frames:
         pd.concat(weight_frames, ignore_index=True).to_csv(weight_summary_path, index=False)
     else:
@@ -637,11 +639,11 @@ def export_fusion_report_assets(
         singles.insert(0, "result_source", "single_backbone")
         comparison = pd.concat([singles, comparison], ignore_index=True, sort=False)
     comparison = comparison.sort_values("macro_f1", ascending=False)
-    comparison_path = table_root / "frozen_fusion_vs_single_validation.csv"
+    comparison_path = table_root / f"{prefix}_fusion_vs_single_validation.csv"
     comparison.to_csv(comparison_path, index=False)
 
-    plot_path = figure_root / "frozen_fusion_macro_f1.png"
-    save_fusion_macro_f1_plot(comparison, plot_path)
+    plot_path = figure_root / f"{prefix}_fusion_macro_f1.png"
+    save_fusion_macro_f1_plot(comparison, plot_path, feature_source=feature_source)
     return {
         "fusion_results": fusion_results_path,
         "fusion_per_class_metrics": per_class_path,
@@ -651,7 +653,12 @@ def export_fusion_report_assets(
     }
 
 
-def save_fusion_macro_f1_plot(results: pd.DataFrame, output_path: str | Path) -> Path:
+def save_fusion_macro_f1_plot(
+    results: pd.DataFrame,
+    output_path: str | Path,
+    *,
+    feature_source: str = "frozen",
+) -> Path:
     output = Path(output_path)
     labels = []
     for _, row in results.head(16).iterrows():
@@ -669,7 +676,8 @@ def save_fusion_macro_f1_plot(results: pd.DataFrame, output_path: str | Path) ->
     ax.axhline(0.6924, color="#dc2626", linestyle="--", linewidth=1.5, label="ViT baseline")
     ax.set_xticks(range(len(values)), labels, rotation=45, ha="right")
     ax.set_ylabel("Validation macro-F1")
-    ax.set_title("Frozen feature fusion vs single-backbone validation macro-F1")
+    title_source = "Frozen" if feature_source == "frozen" else "Fine-tuned"
+    ax.set_title(f"{title_source} feature fusion vs single-backbone validation macro-F1")
     ax.legend()
     for index, value in enumerate(values):
         ax.text(index, value, f"{value:.3f}", ha="center", va="bottom", fontsize=8)
@@ -695,6 +703,14 @@ def _fusion_method_alias(method: str) -> str:
     if method == "weighted_pca_384":
         return "weightedpca384"
     return method
+
+
+def _experiment_id_for_source(feature_source: str) -> str:
+    return "E3" if feature_source == "finetuned" else "E2"
+
+
+def _test_policy_for_source(feature_source: str) -> str:
+    return "not_used_in_sprint4" if feature_source == "finetuned" else "not_used_in_sprint3"
 
 
 def _resolve_device(value: str | None) -> torch.device:

@@ -137,3 +137,27 @@ Gerekçe: D004 ve D013 kararları, Sprint 2 single-backbone validation sonuçlar
 Karar: E2 fusion sonuçlarının classifier capacity'ye duyarlılığını ölçmek için validation-only E2b diagnostic çalıştırılmıştır. Bu diagnostic ana E2 artifact tablolarına karıştırılmayacak, ayrı `e2b_mlp_capacity_diagnostic.csv` tablosunda raporlanacaktır.
 
 Gerekçe: E2 ana matrix modest MLP recipe ile çalıştırılmıştır. Daha geniş MLP, high-dimensional concat feature'lar için daha uygun olabilir. E2b sonucunda `vit_b16+swin_tiny concat` deep-regularized MLP ile validation macro-F1 `0.7262` üretmiştir ve bu değer BEiT triple concat capacity variants üstündedir. Buna karşılık BEiT triple variants, DeiT triple variants'tan güçlü kalmıştır. Bu nedenle E2b, "BEiT üçüncü backbone olarak DeiT'ten daha tamamlayıcı" yorumunu korur; fakat "en iyi frozen fusion mutlaka three-backbone olmalıdır" yorumunu zayıflatır. Test seti kullanılmamıştır.
+
+## D023 - Sprint 4 Partial Fine-Tuning Policy
+
+Karar: Sprint 4 fine-tuning, forward backbone seti `vit_b16`, `swin_tiny`, `beit_base` ile sınırlıdır. `vit_b16` ve `beit_base` için son 2 transformer block ile norm/head trainable yapılır. `swin_tiny` için son Swin stage (`layers[-1]`) ile norm/head trainable yapılır. Tüm önceki parametreler frozen kalır.
+
+Gerekçe: Amaç full fine-tuning değil, kontrollü domain adaptation etkisini ölçmektir. Son blok/stage politikası Colab maliyetini ve overfitting riskini sınırlar, fakat pretrained representation'ın HAM10000 benchmark dermoscopic image classification görevine sınırlı uyarlanmasına izin verir.
+
+## D024 - Sprint 4 Validation-Only Checkpoint Selection
+
+Karar: Fine-tuned checkpoint seçimi validation macro-F1 ile yapılır. Fine-tuning loop'u Sprint 4 kapsamında test loader almaz ve test metrics üretmez.
+
+Gerekçe: Test seti final audit için korunmalıdır. Checkpoint veya hyperparameter seçimini test sonucu ile yapmak, Sprint 5 final audit disiplinini bozar.
+
+## D025 - Sprint 4 Fine-Tuned Feature Cache Policy
+
+Karar: Fine-tuned checkpoint seçildikten sonra temporary classification head kaldırılır ve Sprint 2 ile aynı feature extraction noktaları kullanılarak `feature_source=finetuned` cache'leri üretilir. Canonical Sprint 4 cache path'i `artifacts/features/ham10000/finetuned/<backbone>/` olur ve train/validation splitleri içerir.
+
+Gerekçe: Downstream MLP ve fusion script'lerinin aynı cache contract'ını kullanması frozen vs fine-tuned karşılaştırmasını daha temiz yapar. Cache metadata checkpoint path, checkpoint selection metric, unfreeze policy ve Sprint 4 test usage policy bilgisini taşır.
+
+## D026 - Sprint 4 Downstream Fusion Comparison Policy
+
+Karar: Fine-tuned single-backbone MLP sonuçları frozen single baselines ile; fine-tuned concat/weighted fusion sonuçları ise hem modest frozen fusion baseline (`ViT + Swin + BEiT concat`, `0.6988`) hem de E2b stronger-MLP frozen baseline (`ViT + Swin concat + deep_reg`, `0.7262`) ile karşılaştırılacaktır.
+
+Gerekçe: E2b, frozen fusion'ın classifier capacity'ye duyarlı olduğunu göstermiştir. Fine-tuned sonuçları yalnız modest E2 baseline ile karşılaştırmak fine-tuning gain'i olduğundan güçlü gösterebilir. Bu nedenle E2b ayrı diagnostic baseline olarak görünür tutulmalıdır.

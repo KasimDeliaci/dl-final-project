@@ -11,8 +11,12 @@ backbone:
   feature_dimension: 768
   feature_source: frozen
   fine_tuning_policy:
-    unfreeze_blocks: pending
-    learning_rate: pending
+    unfreeze_blocks: last_swin_stage
+    trainable_extra:
+      - norm
+      - head
+    backbone_learning_rate: 0.00001
+    head_learning_rate: 0.0001
   notes:
     - Sprint 2 uses pooled final-stage features as the canonical Swin representation.
     - Fine-tuning policy remains pending until Sprint 4.

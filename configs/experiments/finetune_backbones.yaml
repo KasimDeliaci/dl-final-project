@@ -2,7 +2,7 @@ experiment:
   id: finetune_backbones
   feature_source: finetuned
   selection_metric: validation_macro_f1
-  test_policy: audit_only
+  test_policy: not_used_in_sprint4
   planned_backbones:
     - vit_b16
     - swin_tiny
@@ -15,6 +15,43 @@ experiment:
     - Sprint 4 uses validation-selected forward set only; test remains audit-only.
   transfer_learning_policy:
     frozen_baseline_required: true
-    unfreeze_last_transformer_blocks: pending
+    unfreeze_last_transformer_blocks: true
     checkpoint_selection: validation_macro_f1
-  status: scaffold_only
+  status: planned
+
+finetuning:
+  experiment_id: E3
+  feature_source: finetuned
+  seed: 42
+  image_size: 224
+  backbones:
+    - vit_b16
+    - swin_tiny
+    - beit_base
+  screened_not_forward:
+    - deit3_small
+  checkpoint_dir: artifacts/checkpoints/ham10000/finetuned
+  batch_size: 16
+  epochs: 8
+  backbone_learning_rate: 0.00001
+  head_learning_rate: 0.0001
+  weight_decay: 0.0001
+  early_stopping_patience: 3
+  class_weighting: true
+  mixed_precision: true
+  checkpoint_selection: validation_macro_f1
+  test_policy: not_used_in_sprint4
+  unfreeze_policies:
+    vit_b16: last_2_blocks
+    swin_tiny: last_stage
+    beit_base: last_2_blocks
+  feature_extraction_after_selection:
+    output_root: artifacts/features
+    output_source: finetuned
+    splits:
+      - train
+      - val
+    cache_format: sprint2_compatible_pt_plus_csv_manifest
+  colab:
+    drive_root: MyDrive/dl-final-artifact
+    note: Run full fine-tuning on GPU if local runtime is too slow.

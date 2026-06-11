@@ -1,12 +1,14 @@
 experiment_matrix:
   id: finetuned_feature_matrix
+  experiment_id: E3
   feature_source: finetuned
   classifier: mlp
   selection_metric: validation_macro_f1
-  test_policy: audit_only
+  test_policy: not_used_in_sprint4
   fusion_methods:
     - concat
-    - weighted
+    - weighted_learned_512
+    - weighted_pca_384
   planned_scope:
     single_backbone: true
     representative_pairwise_fusion: true
@@ -17,4 +19,38 @@ experiment_matrix:
     - beit_base
   screened_not_forward:
     - deit3_small
-  status: scaffold_only
+  representative_fusion_combinations:
+    - backbones:
+        - vit_b16
+        - swin_tiny
+      rationale: Best frozen E2b fusion baseline to compare against.
+    - backbones:
+        - vit_b16
+        - swin_tiny
+        - beit_base
+      rationale: Best modest E2 BEiT-expanded fusion baseline and third-backbone check.
+  mlp_baseline:
+    hidden_dims:
+      - 512
+      - 256
+    dropout: 0.3
+    optimizer: adamw
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    early_stopping_patience: 6
+    class_imbalance: train_only_class_weighted_cross_entropy
+    feature_normalization: StandardScaler fit on train cache only
+  optional_capacity_diagnostic:
+    compare_against_e2b: true
+    variants:
+      - name: deep_reg
+        hidden_dims:
+          - 2048
+          - 1024
+          - 512
+        dropout: 0.5
+        learning_rate: 0.0003
+        weight_decay: 0.0005
+        epochs: 60
+        early_stopping_patience: 10
+  status: planned

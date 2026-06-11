@@ -323,6 +323,110 @@ beit_base
 
 `deit3_small` remains a planned/screened baseline from Sprint 2-3 and is not carried into the fine-tuning compute budget unless a later decision supersedes D021.
 
+## Sprint 4 Commands
+
+Sprint 4 implementation and policy tests:
+
+```bash
+PYTHONPATH=src uv run python -m pytest \
+  tests/test_sprint2_features.py \
+  tests/test_sprint3_fusion.py \
+  tests/test_sprint4_finetune.py
+```
+
+Local one-backbone smoke run without pretrained downloads:
+
+```bash
+PYTHONPATH=src uv run python scripts/finetune_backbone.py \
+  --config configs/experiments/finetune_backbones.yaml \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --backbones vit_b16 \
+  --epochs 1 \
+  --batch-size 1 \
+  --num-workers 0 \
+  --limit-per-split 2 \
+  --no-pretrained \
+  --no-mixed-precision \
+  --checkpoint-dir artifacts/checkpoints_smoke/ham10000/finetuned \
+  --feature-root artifacts/features_smoke \
+  --run-root artifacts/runs_smoke
+```
+
+Full Colab/GPU fine-tuning and fine-tuned train/validation cache extraction:
+
+```bash
+PYTHONPATH=src uv run python scripts/finetune_backbone.py \
+  --config configs/experiments/finetune_backbones.yaml \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --backbones vit_b16 swin_tiny beit_base \
+  --batch-size 16 \
+  --num-workers 2
+```
+
+Fine-tuned single-backbone MLP validation runs:
+
+```bash
+PYTHONPATH=src uv run python scripts/train_mlp.py \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --feature-source finetuned \
+  --backbones vit_b16 swin_tiny beit_base \
+  --batch-size 128
+```
+
+Representative fine-tuned fusion matrix:
+
+```bash
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --feature-source finetuned \
+  --only-combination vit_b16 swin_tiny \
+  --fusion-methods concat weighted_learned_512 weighted_pca_384 \
+  --batch-size 128 \
+  --run-tag s4_pair
+
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --feature-source finetuned \
+  --only-combination vit_b16 swin_tiny beit_base \
+  --fusion-methods concat weighted_learned_512 weighted_pca_384 \
+  --batch-size 128 \
+  --run-tag s4_triple
+```
+
+Optional E2b-style fine-tuned concat capacity diagnostic:
+
+```bash
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --feature-source finetuned \
+  --only-combination vit_b16 swin_tiny \
+  --fusion-methods concat \
+  --hidden-dims 2048 1024 512 \
+  --dropout 0.5 \
+  --learning-rate 0.0003 \
+  --weight-decay 0.0005 \
+  --epochs 60 \
+  --early-stopping-patience 10 \
+  --batch-size 128 \
+  --run-tag s4_deep_reg
+```
+
+Quality checks:
+
+```bash
+PYTHONPATH=src uv run ruff check .
+PYTHONPATH=src uv run python -m pytest \
+  tests/test_dataset_sprint1.py \
+  tests/test_sprint2_features.py \
+  tests/test_sprint3_fusion.py \
+  tests/test_representation_complementarity.py \
+  tests/test_sprint4_finetune.py
+```
+
+Sprint 4 commands read train/validation only and do not compute test metrics. Full fine-tuning can
+be run in Colab with Drive root:
+
+```text
+MyDrive/dl-final-artifact/
+```
+
 ## Colab Commands
 
 GPU gerektiren full transformer extraction ve fine-tuning işleri Sprint 2+ sırasında Colab'de çalıştırılabilir. Büyük artifact akışı için Drive root:

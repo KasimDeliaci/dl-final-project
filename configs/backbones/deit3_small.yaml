@@ -11,8 +11,8 @@ backbone:
   feature_dimension: 384
   feature_source: frozen
   fine_tuning_policy:
-    unfreeze_blocks: pending
-    learning_rate: pending
+    unfreeze_blocks: not_selected_for_sprint4
+    learning_rate: not_applicable
   notes:
     - Initially selected third transformer backbone for Sprint 2 and the planned E2 matrix.
     - Chosen over BEiT before E2 because Sprint 2 single-backbone validation was stronger.

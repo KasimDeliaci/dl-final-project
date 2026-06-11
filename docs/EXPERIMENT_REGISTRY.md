@@ -144,6 +144,8 @@ Report role: Transfer learning comparison.
 
 Planning note: `deit3_small` remains a screened/planned baseline from E1/E2, but Sprint 4 fine-tuning scope uses `beit_base` as the third backbone because E2 validation fusion and representation similarity diagnostics favored BEiT complementarity.
 
+Implementation plan: Sprint 4 is registered in `docs/exec-plans/active/sprint-4-finetuned-transformer-features.md`. Partial fine-tuning policy is `vit_b16` last 2 transformer blocks plus norm/head, `swin_tiny` last Swin stage plus norm/head, and `beit_base` last 2 transformer blocks plus fc_norm/norm/head. Canonical Sprint 4 cache extraction writes train and validation caches only under `artifacts/features/ham10000/finetuned/<backbone>/`. Test metrics are not computed in Sprint 4.
+
 ### E2b - MLP Capacity Diagnostic for Frozen Features
 
 Status: completed

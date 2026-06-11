@@ -168,7 +168,7 @@ def run_single_backbone(
     runtime_seconds = round(perf_counter() - started, 4)
     run_config = {
         "run_id": run_id,
-        "experiment_id": "E1",
+        "experiment_id": "E3" if args.feature_source == "finetuned" else "E1",
         "seed": seed,
         "dataset": dataset_config["name"],
         "feature_source": args.feature_source,
@@ -187,7 +187,10 @@ def run_single_backbone(
         "dropout": args.dropout,
         "early_stopping_patience": args.early_stopping_patience,
         "selection_metric": "validation_macro_f1",
-        "test_policy": "not_used_in_sprint2_model_selection",
+        "test_policy": (
+            "not_used_in_sprint4" if args.feature_source == "finetuned"
+            else "not_used_in_sprint2_model_selection"
+        ),
         "feature_cache_dir": str(cache_dir),
         "runtime_seconds": runtime_seconds,
     }
