@@ -118,6 +118,8 @@ def export_single_backbone_report_assets(
         config = json.loads(config_path.read_text(encoding="utf-8"))
         if config.get("feature_source") != feature_source or config.get("fusion_method") != "none":
             continue
+        if "_e2b_" in str(config.get("run_id", "")):
+            continue
         metrics_path = config_path.parent / "metrics_summary.csv"
         if not metrics_path.exists():
             continue
