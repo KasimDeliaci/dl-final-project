@@ -220,3 +220,40 @@ Add transformer fine-tuning helpers:
 4. tests for trainability, checkpoint metadata, cache shape, and cache alignment.
 
 Then run a one-epoch `--no-pretrained --limit-per-split` smoke command before any full Colab run.
+
+## Completion Note
+
+Completed on 2026-06-11 with a full Colab/GPU validation-only run over `vit_b16`, `swin_tiny`, and
+`beit_base`.
+
+Produced local generated artifacts under:
+
+```text
+artifacts/checkpoints/ham10000/finetuned/
+artifacts/features/ham10000/finetuned/
+artifacts/runs/s4_finetune_*_seed42/
+artifacts/runs/*_s2_finetuned_*_none_mlp_seed42/
+artifacts/runs/*_s3_finetuned_*_mlp_s4_*_seed42/
+artifacts/report_assets/tables/*finetuned*.csv
+artifacts/report_assets/figures/finetuned_*.png
+```
+
+Validation macro-F1 summary:
+
+| Configuration | Feature source | Fusion | Validation macro-F1 |
+|---|---|---|---:|
+| ViT | finetuned | none | `0.6876` |
+| Swin | finetuned | none | `0.6517` |
+| BEiT | finetuned | none | `0.5181` |
+| ViT + Swin | finetuned | concat | `0.7161` |
+| ViT + Swin + BEiT | finetuned | concat | `0.7298` |
+
+Best validation-only result: `vit_b16+swin_tiny+beit_base concat` at `0.7298` validation macro-F1.
+This exceeded the modest frozen triple concat baseline (`0.6988`) and narrowly exceeded the E2b
+stronger-MLP frozen ViT+Swin diagnostic baseline (`0.7262`). Test metrics were not computed.
+
+Post-download local verification confirmed train/validation cache shapes `(7008, 768)` and
+`(1504, 768)` for all three backbones, split row-order alignment, finite feature tensors, 12
+fine-tuned prediction dumps with 1,504 validation rows, run configs with
+`test_policy=not_used_in_sprint4`,
+and Git-ignored generated artifacts.

@@ -427,6 +427,55 @@ be run in Colab with Drive root:
 MyDrive/dl-final-artifact/
 ```
 
+Post-Colab artifact sync from a downloaded artifact bundle:
+
+```bash
+rsync -av /Users/arcustin2/Downloads/artifacts/ /Users/arcustin2/kasim/dl-final/artifacts/
+```
+
+Sprint 4 artifact integrity check:
+
+```bash
+PYTHONPATH=src uv run python - <<'PY'
+from pathlib import Path
+import json
+import pandas as pd
+import torch
+
+from dl_final.features.cache import feature_cache_path, load_feature_cache, verify_cache_matches_split
+
+root = Path("artifacts/features/ham10000/finetuned")
+expected = {"train": 7008, "val": 1504}
+for backbone in ["vit_b16", "swin_tiny", "beit_base"]:
+    for split, rows in expected.items():
+        cache = load_feature_cache(feature_cache_path(root / backbone, split))
+        assert tuple(cache.features.shape) == (rows, 768)
+        assert torch.isfinite(cache.features).all()
+        assert cache.metadata["feature_source"] == "finetuned"
+        verify_cache_matches_split(cache, Path("data/splits") / f"{split}.csv")
+
+for path in sorted(Path("artifacts/runs").glob("*finetuned*/predictions.csv")):
+    frame = pd.read_csv(path)
+    assert len(frame) == 1504, path
+    prob_cols = [col for col in frame.columns if col.startswith("prob_")]
+    assert len(prob_cols) == 7, path
+    assert frame[prob_cols].notna().all().all(), path
+    run_config = json.loads(path.with_name("run_config.json").read_text())
+    assert run_config["test_policy"] == "not_used_in_sprint4", path
+
+for path in sorted(Path("artifacts/runs").glob("s4_finetune_*_seed42/predictions.csv")):
+    frame = pd.read_csv(path)
+    assert len(frame) == 1504, path
+    prob_cols = [col for col in frame.columns if col.startswith("prob_")]
+    assert len(prob_cols) == 7, path
+    assert frame[prob_cols].notna().all().all(), path
+    run_config = json.loads(path.with_name("run_config.json").read_text())
+    assert run_config["test_policy"] == "not_used_in_sprint4", path
+
+print("Sprint 4 artifact integrity check passed.")
+PY
+```
+
 ## Colab Commands
 
 GPU gerektiren full transformer extraction ve fine-tuning işleri Sprint 2+ sırasında Colab'de çalıştırılabilir. Büyük artifact akışı için Drive root:

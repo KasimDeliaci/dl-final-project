@@ -116,7 +116,7 @@ Representation similarity diagnostic: Validation feature caches were analyzed wi
 
 ### E3 - Fine-Tuning Last Transformer Blocks
 
-Status: planned
+Status: completed
 
 Question: Forward backbone setinde son transformer bloklarını fine-tune etmek HAM10000 temsillerini iyileştirir mi?
 
@@ -144,7 +144,9 @@ Report role: Transfer learning comparison.
 
 Planning note: `deit3_small` remains a screened/planned baseline from E1/E2, but Sprint 4 fine-tuning scope uses `beit_base` as the third backbone because E2 validation fusion and representation similarity diagnostics favored BEiT complementarity.
 
-Implementation plan: Sprint 4 is registered in `docs/exec-plans/active/sprint-4-finetuned-transformer-features.md`. Partial fine-tuning policy is `vit_b16` last 2 transformer blocks plus norm/head, `swin_tiny` last Swin stage plus norm/head, and `beit_base` last 2 transformer blocks plus fc_norm/norm/head. Canonical Sprint 4 cache extraction writes train and validation caches only under `artifacts/features/ham10000/finetuned/<backbone>/`. Test metrics are not computed in Sprint 4.
+Implementation plan: Sprint 4 is recorded in `docs/exec-plans/completed/sprint-4-finetuned-transformer-features.md`. Partial fine-tuning policy is `vit_b16` last 2 transformer blocks plus norm/head, `swin_tiny` last Swin stage plus norm/head, and `beit_base` last 2 transformer blocks plus fc_norm/norm/head. Canonical Sprint 4 cache extraction writes train and validation caches only under `artifacts/features/ham10000/finetuned/<backbone>/`. Test metrics are not computed in Sprint 4.
+
+Result note: E3 completed as a validation-only Colab/GPU run over `vit_b16`, `swin_tiny`, and `beit_base`. Selected checkpoints were written under `artifacts/checkpoints/ham10000/finetuned/<backbone>/best.pt`, and fine-tuned train/validation feature caches were written under `artifacts/features/ham10000/finetuned/<backbone>/` with canonical row counts of 7,008 train and 1,504 validation rows. Single-backbone fine-tuned feature MLP validation macro-F1 values were ViT `0.6876`, Swin `0.6517`, and BEiT `0.5181`. Fine-tuned concat fusion improved to `0.7161` for `vit_b16+swin_tiny` and `0.7298` for `vit_b16+swin_tiny+beit_base`. The best fine-tuned result therefore exceeded the modest frozen triple concat baseline (`0.6988`) and narrowly exceeded the E2b stronger-MLP frozen ViT+Swin diagnostic baseline (`0.7262`). The gain over E2b is small, so it should be framed as limited evidence for domain-specific adaptation improving representation quality. Test metrics were not computed.
 
 ### E2b - MLP Capacity Diagnostic for Frozen Features
 

@@ -105,41 +105,113 @@ Verification evidence should include:
 
 ## Validation Results
 
-Pending full Colab/GPU run.
-
-Fill after completion:
+Full Colab/GPU run completed on 2026-06-11. All values below are validation-only; the test split
+was not used.
 
 | Configuration | Feature source | Fusion | Validation macro-F1 | Accuracy | Macro precision | Macro recall | Weighted-F1 |
 |---|---|---|---:|---:|---:|---:|---:|
-| ViT | finetuned | none | TBD | TBD | TBD | TBD | TBD |
-| Swin | finetuned | none | TBD | TBD | TBD | TBD | TBD |
-| BEiT | finetuned | none | TBD | TBD | TBD | TBD | TBD |
-| ViT + Swin | finetuned | concat | TBD | TBD | TBD | TBD | TBD |
-| ViT + Swin + BEiT | finetuned | concat | TBD | TBD | TBD | TBD | TBD |
+| ViT | finetuned | none | `0.6876` | `0.7979` | `0.6473` | `0.7409` | `0.8063` |
+| Swin | finetuned | none | `0.6517` | `0.7852` | `0.6244` | `0.6871` | `0.7930` |
+| BEiT | finetuned | none | `0.5181` | `0.6915` | `0.4746` | `0.5938` | `0.7145` |
+| ViT + Swin | finetuned | concat | `0.7161` | `0.8211` | `0.6734` | `0.7739` | `0.8273` |
+| ViT + Swin + BEiT | finetuned | concat | `0.7298` | `0.8271` | `0.7004` | `0.7673` | `0.8325` |
 
-## Interpretation Template
+Other representative fusion conditions:
 
-If fine-tuning improves validation macro-F1:
+| Configuration | Fusion | Validation macro-F1 |
+|---|---|---:|
+| ViT + Swin | weighted_learned_512 | `0.6908` |
+| ViT + Swin | weighted_pca_384 | `0.6728` |
+| ViT + Swin + BEiT | weighted_learned_512 | `0.6940` |
+| ViT + Swin + BEiT | weighted_pca_384 | `0.6713` |
 
-> Partial fine-tuning improved validation macro-F1 for selected transformer feature sources,
-> suggesting that limited domain-specific adaptation may improve representation quality for
-> HAM10000 benchmark dermoscopic image classification. The gain should be interpreted together with
-> per-class metrics and runtime cost because the dataset is imbalanced and minority-class support is
-> limited.
+Temporary fine-tuning heads selected during image-level partial fine-tuning were weaker than the
+downstream cached-feature MLP protocol: ViT `0.6299`, Swin `0.5907`, and BEiT `0.4136` validation
+macro-F1. These heads are checkpoint-selection instruments, not the final downstream classifier.
 
-If fine-tuning underperforms frozen baselines:
+## Baseline Comparison
 
-> Fine-tuned transformer features did not consistently improve over frozen feature baselines under
-> this controlled protocol. Possible explanations include overfitting, insufficient data, aggressive
-> or insufficient unfreezing, learning-rate sensitivity, minority-class instability, or limited domain
-> shift adaptation. This negative result remains reportable because the split, selection rule, and
-> downstream MLP controls were kept fixed.
+Single-backbone fine-tuned features did not consistently improve over frozen single-backbone
+baselines. ViT decreased slightly from frozen `0.6924` to fine-tuned `0.6876`. Swin improved from
+`0.6115` to `0.6517`, and BEiT improved from `0.4759` to `0.5181`, but both remained below the
+original frozen ViT baseline.
 
-If BEiT remains useful only in fusion:
+Concat fusion showed the strongest fine-tuned feature transfer result. `ViT + Swin + BEiT concat`
+reached validation macro-F1 `0.7298`, above the modest frozen triple concat baseline `0.6988` and
+slightly above the E2b stronger-MLP frozen ViT+Swin diagnostic baseline `0.7262`. The margin over
+E2b is small (`+0.0036` macro-F1), so the result should be described as limited evidence that
+domain-specific adaptation may improve representation quality, not as a decisive win.
 
-> BEiT should be discussed as a complementary representation source rather than a strong standalone
-> backbone. Its value depends on whether ViT + Swin + BEiT fine-tuned concat improves over ViT + Swin
-> fine-tuned concat and whether per-class gains justify the added compute.
+BEiT remains most useful as a complementary fusion source. Fine-tuned BEiT single-backbone MLP
+reached only `0.5181`, but adding BEiT to ViT+Swin concat increased validation macro-F1 from
+`0.7161` to `0.7298`. This supports discussing BEiT as a complementary representation rather than a
+strong standalone backbone under this protocol.
+
+Weighted learned and weighted PCA fusion variants underperformed concat in this run. Learned fusion
+weights should not be interpreted as a direct backbone quality ranking because projection, weighting,
+and downstream classifier training are optimized jointly.
+
+## Per-Class Behavior
+
+Best validation-only configuration: `ViT + Swin + BEiT concat`.
+
+| Label | Support | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|
+| akiec | `49` | `0.7447` | `0.7143` | `0.7292` |
+| bcc | `77` | `0.6552` | `0.7403` | `0.6951` |
+| bkl | `165` | `0.6702` | `0.7758` | `0.7191` |
+| df | `18` | `0.7500` | `0.8333` | `0.7895` |
+| nv | `1006` | `0.9458` | `0.8847` | `0.9142` |
+| mel | `167` | `0.5372` | `0.6048` | `0.5690` |
+| vasc | `22` | `0.6000` | `0.8182` | `0.6923` |
+
+The largest apparent fusion benefit is visible on minority classes such as `df`, but the support is
+only `18`, so this should be treated as high-variance evidence. `mel` remains the most important
+class-level limitation among the higher-support non-`nv` classes.
+
+## Runtime And Artifacts
+
+Fine-tuning runtime on the Colab GPU was approximately 7.8 minutes per backbone: ViT `473.6s`, Swin
+`465.5s`, and BEiT `471.3s`. Downstream cached-feature MLP and fusion runs completed in seconds to
+under 20 seconds per condition. This makes the partial fine-tuning cost moderate relative to the
+small validation macro-F1 gain over the E2b frozen diagnostic.
+
+Local artifact bundle copied from `/Users/arcustin2/Downloads/artifacts/` to repo-local
+`artifacts/` on 2026-06-11. Key files:
+
+```text
+artifacts/checkpoints/ham10000/finetuned/{vit_b16,swin_tiny,beit_base}/best.pt
+artifacts/features/ham10000/finetuned/{vit_b16,swin_tiny,beit_base}/{train.pt,val.pt,manifest.json}
+artifacts/runs/s4_finetune_backbones_summary.json
+artifacts/runs/s4_finetune_{vit,swin,beit}_seed42/
+artifacts/runs/20260611_111312_s2_finetuned_vit_none_mlp_seed42/
+artifacts/runs/20260611_111318_s2_finetuned_swin_none_mlp_seed42/
+artifacts/runs/20260611_111326_s2_finetuned_beit_none_mlp_seed42/
+artifacts/runs/20260611_111338_s3_finetuned_vit-swin_concat_mlp_s4_pair_seed42/
+artifacts/runs/20260611_111408_s3_finetuned_vit-swin-beit_concat_mlp_s4_triple_seed42/
+artifacts/report_assets/tables/single_backbone_finetuned_results.csv
+artifacts/report_assets/tables/single_backbone_finetuned_per_class_metrics.csv
+artifacts/report_assets/tables/finetuned_fusion_results.csv
+artifacts/report_assets/tables/finetuned_fusion_per_class_metrics.csv
+artifacts/report_assets/tables/finetuned_fusion_vs_single_validation.csv
+artifacts/report_assets/figures/finetuned_single_backbone_macro_f1.png
+artifacts/report_assets/figures/finetuned_fusion_macro_f1.png
+```
+
+## Verification Evidence
+
+Local post-download verification confirmed:
+
+- Fine-tuned feature cache shapes: train `(7008, 768)` and validation `(1504, 768)` for ViT, Swin,
+  and BEiT.
+- Feature cache manifests align with canonical split row order by `image_id`, `lesion_id`, label,
+  and split.
+- Feature tensors and prediction probabilities contain no NaN/Inf.
+- All 12 fine-tuned prediction dumps contain `1504` validation rows.
+- Run configs record `test_policy=not_used_in_sprint4`.
+- Report tables and figures are present under `artifacts/report_assets/`.
+- Generated checkpoints, feature caches, run artifacts, predictions, and report assets are ignored
+  by Git.
 
 ## Limitations
 

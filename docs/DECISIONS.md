@@ -161,3 +161,15 @@ Gerekçe: Downstream MLP ve fusion script'lerinin aynı cache contract'ını kul
 Karar: Fine-tuned single-backbone MLP sonuçları frozen single baselines ile; fine-tuned concat/weighted fusion sonuçları ise hem modest frozen fusion baseline (`ViT + Swin + BEiT concat`, `0.6988`) hem de E2b stronger-MLP frozen baseline (`ViT + Swin concat + deep_reg`, `0.7262`) ile karşılaştırılacaktır.
 
 Gerekçe: E2b, frozen fusion'ın classifier capacity'ye duyarlı olduğunu göstermiştir. Fine-tuned sonuçları yalnız modest E2 baseline ile karşılaştırmak fine-tuning gain'i olduğundan güçlü gösterebilir. Bu nedenle E2b ayrı diagnostic baseline olarak görünür tutulmalıdır.
+
+## D027 - Sprint 4 Colab Split And Artifact Guard
+
+Karar: Sprint 4 Colab launcher akışı, full run öncesinde HAM10000 audit ve canonical lesion-aware split üretimini yeniden çalıştırır; split row count `train=7008`, `val=1504`, `test=1503` değilse çalışmayı durdurur. Fine-tuned cache'lerde eski split kaynaklı row count uyuşmazlığı bulunursa Sprint 4 local output'ları temizlenip yeniden üretilir. `scripts/finetune_backbone.py` full run sırasında train/validation row count guard uygular; smoke/limited run'lar `--limit-per-split` ile bu guard dışında tutulur.
+
+Gerekçe: Colab/Drive state'i eski `dl-assignment` artifact bundle'larından veya stale split dosyalarından etkilenebilir. Sprint 4 fine-tuned feature cache'leri downstream MLP/fusion script'leri tarafından strict row alignment ile okunur; bu nedenle yanlış split üstüne üretilmiş cache'ler geçersizdir. Guard policy, Colab'de uzun fine-tuning başlamadan önce hatayı yakalamak ve yanlış artifact'lerin rapora karışmasını engellemek için gereklidir.
+
+## D028 - Sprint 4 Validation Result Interpretation
+
+Karar: Sprint 4 validation-only seçiminde en güçlü fine-tuned downstream sonuç `vit_b16+swin_tiny+beit_base concat` olmuştur (`0.7298` validation macro-F1). Bu sonuç, modest frozen triple concat baseline (`0.6988`) ve E2b stronger-MLP frozen ViT+Swin diagnostic baseline (`0.7262`) ile birlikte yorumlanacaktır. Test seti hâlâ kullanılmamıştır ve final audit'e bırakılmıştır.
+
+Gerekçe: Fine-tuned single-backbone sonuçları karışıktır: ViT frozen baseline'ın biraz altında kalmış, Swin ve BEiT single-backbone olarak iyileşmiş fakat frozen ViT seviyesine ulaşmamıştır. Fine-tuned concat fusion'da BEiT eklemek `vit_b16+swin_tiny concat` sonucunu `0.7161`den `0.7298`e çıkarmıştır. Bu, BEiT'in standalone kalite yerine complementary representation kaynağı olarak tartışılmasını destekler. E2b'ye karşı fark küçük olduğu için sonuç temkinli şekilde "limited evidence" olarak raporlanacaktır.
