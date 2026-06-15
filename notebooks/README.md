@@ -15,3 +15,6 @@ Kurallar:
 - `05_e3e_conservative_vit_finetuning.ipynb`: E3e conservative ViT fine-tuning diagnostic. This
   runner writes to separate E3e checkpoint, feature, run, and Drive namespaces and does not replace
   canonical Sprint 4 artifacts.
+- `06_e3h_tta_rot4.ipynb`: E3h validation-only rot4 TTA diagnostic. This runner restores existing
+  E3d/E3f/E3g artifacts, runs inference-only probability averaging on Colab GPU, and syncs outputs
+  under `MyDrive/dl-final-artifact/e3h_tta_rot4/`.

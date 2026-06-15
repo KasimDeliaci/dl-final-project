@@ -229,3 +229,34 @@ Add a small reusable TTA helper under `src/dl_final/evaluation/tta.py` with:
 
 Then implement `scripts/evaluate_tta_rot4.py` to run a smoke validation pass on a small prefix before
 full validation inference.
+
+## Implementation Status - 2026-06-15
+
+Implemented:
+
+- `src/dl_final/evaluation/tta.py` with deterministic policy expansion, probability averaging,
+  probability validation, probability-column helpers, and prediction alignment checks.
+- `scripts/evaluate_tta_rot4.py` for E3h inference-only validation evaluation over E3d/E3f
+  metadata-conditioned model families.
+- `tests/test_e3h_tta.py` for E3h helper behavior.
+- `notebooks/06_e3h_tta_rot4.ipynb` as a thin Colab runner that restores required Drive artifacts,
+  runs smoke/full E3h commands, verifies outputs, displays report assets, and syncs E3h results
+  under `MyDrive/dl-final-artifact/e3h_tta_rot4/`.
+- `docs/COMMANDS.md` E3h smoke, full Colab, and artifact-integrity commands.
+
+Local verification:
+
+- `PYTHONPATH=src uv run ruff check .` passed.
+- `PYTHONPATH=src uv run pytest tests/test_e3h_tta.py` passed.
+- Regression suite passed:
+  `tests/test_e3h_tta.py`, `tests/test_sprint2_features.py`, `tests/test_sprint3_fusion.py`,
+  `tests/test_representation_complementarity.py`, and `tests/test_sprint4_finetune.py`.
+- Local smoke command completed with `--max-samples 8`, producing gitignored smoke artifacts under
+  `artifacts/runs/e3h_tta_rot4_smoke_n8/` and `artifacts/report_assets/*e3h_tta_rot4*_smoke.*`.
+
+Full validation status:
+
+- Full local validation was attempted but stopped because local MPS/CPU inference was too slow, and
+  `batch-size 256` was killed by memory pressure (`exit 137`).
+- Full `1504`-row E3h validation should be run on Colab GPU using the notebook/command above.
+- E3h remains active until full validation outputs are produced and the report note is written.

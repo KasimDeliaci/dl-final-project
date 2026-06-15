@@ -892,6 +892,69 @@ print("E3g artifact integrity check passed.")
 PY
 ```
 
+## E3h Rot4 TTA
+
+E3h is a validation-only inference-time TTA diagnostic. Full validation should run on Colab GPU, not
+on the local laptop.
+
+Colab runner:
+
+```text
+notebooks/06_e3h_tta_rot4.ipynb
+```
+
+Local smoke only:
+
+```bash
+PYTHONPATH=src uv run python scripts/evaluate_tta_rot4.py \
+  --max-samples 8 \
+  --batch-size 4 \
+  --num-workers 0 \
+  --device auto \
+  --no-mixed-precision
+```
+
+Full Colab command:
+
+```bash
+PYTHONUNBUFFERED=1 PYTHONPATH=src uv run python scripts/evaluate_tta_rot4.py \
+  --batch-size 128 \
+  --num-workers 2 \
+  --device cuda \
+  --identity-tolerance 1e-3
+```
+
+E3h artifact integrity check:
+
+```bash
+PYTHONPATH=src uv run python - <<'PY'
+from pathlib import Path
+import json
+import pandas as pd
+
+from dl_final.evaluation.tta import probabilities_from_frame
+
+run = Path("artifacts/runs/e3h_tta_rot4")
+config = json.loads((run / "run_config.json").read_text())
+assert config["test_policy"] == "not_loaded_or_used_in_e3h"
+assert config["views"] == ["identity", "rot90", "rot180", "rot270"]
+
+pred = pd.read_csv(run / "predictions_top3_family_equal_tta_rot4.csv")
+assert len(pred) == 1504, len(pred)
+assert set(pred["split"].astype(str)) == {"val"}
+_ = probabilities_from_frame(pred, ["akiec", "bcc", "bkl", "df", "nv", "mel", "vasc"])
+
+identity = pd.read_csv(run / "tta_identity_sanity.csv")
+assert len(identity) == 15, len(identity)
+assert identity["passed"].all()
+
+results = pd.read_csv(run / "tta_ensemble_results.csv")
+assert set(results["ensemble_id"]) == {"top3_family_equal_tta_rot4"}
+
+print("E3h artifact integrity check passed.")
+PY
+```
+
 ## Colab Commands
 
 GPU gerektiren full transformer extraction ve fine-tuning işleri Sprint 2+ sırasında Colab'de çalıştırılabilir. Büyük artifact akışı için Drive root:

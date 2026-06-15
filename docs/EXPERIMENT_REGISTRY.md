@@ -373,7 +373,7 @@ Result note: E3g completed as a validation-only prediction ensemble diagnostic. 
 
 ### E3h - Rot4 Test-Time Augmentation Diagnostic
 
-Status: planned
+Status: active
 
 Question: Can deterministic four-view right-angle rotation TTA improve the validation macro-F1 of
 the E3g `top3_family_equal` prediction ensemble without training new models or using the test split?
@@ -408,8 +408,9 @@ Required artifacts:
 Report role: Inference-time robustness diagnostic for the strongest validation-selected ensemble.
 Not a new training or representation-learning result.
 
-Implementation plan: E3h is recorded in `docs/exec-plans/active/e3h-tta-rot4-inference.md`. Test
-split must not be loaded or transformed for E3h.
+Implementation plan: E3h is recorded in `docs/exec-plans/active/e3h-tta-rot4-inference.md`.
+Implementation support is in `src/dl_final/evaluation/tta.py` and
+`scripts/evaluate_tta_rot4.py`. Test split must not be loaded or transformed for E3h.
 
 ### E4 - Final Model Selection and Audit
 
