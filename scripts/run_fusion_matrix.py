@@ -630,13 +630,19 @@ def export_fusion_report_assets(
     if per_class_frames:
         pd.concat(per_class_frames, ignore_index=True).to_csv(per_class_path, index=False)
     else:
-        pd.DataFrame().to_csv(per_class_path, index=False)
+        pd.DataFrame(columns=["run_id", "label", "support", "precision", "recall", "f1"]).to_csv(
+            per_class_path,
+            index=False,
+        )
 
     weight_summary_path = table_root / f"{prefix}_fusion_weight_summary.csv"
     if weight_frames:
         pd.concat(weight_frames, ignore_index=True).to_csv(weight_summary_path, index=False)
     else:
-        pd.DataFrame().to_csv(weight_summary_path, index=False)
+        pd.DataFrame(columns=["run_id", "backbone", "weight", "weight_sum"]).to_csv(
+            weight_summary_path,
+            index=False,
+        )
 
     comparison = fusion.copy()
     comparison.insert(0, "result_source", "fusion")

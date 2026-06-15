@@ -202,3 +202,6 @@ def test_fusion_export_includes_e3e_feature_sources(tmp_path: Path) -> None:
     assert results["feature_source"].tolist() == [
         "finetuned_vit_last1_lr5e6_plus_s4_swin_beit"
     ]
+    weights = pd.read_csv(exported["fusion_weight_summary"])
+    assert weights.empty
+    assert weights.columns.tolist() == ["run_id", "backbone", "weight", "weight_sum"]
