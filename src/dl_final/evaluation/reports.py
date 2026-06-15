@@ -150,7 +150,7 @@ def export_single_backbone_report_assets(
         pd.DataFrame().to_csv(per_class_path, index=False)
 
     plot_path = figure_root / f"{feature_source}_single_backbone_macro_f1.png"
-    save_macro_f1_plot(results, plot_path)
+    save_macro_f1_plot(results, plot_path, feature_source=feature_source)
     return {
         "results_table": results_path,
         "per_class_table": per_class_path,
@@ -202,7 +202,12 @@ def save_training_curves(history: pd.DataFrame, output_path: str | Path, *, titl
     plt.close(fig)
 
 
-def save_macro_f1_plot(results: pd.DataFrame, output_path: str | Path) -> Path:
+def save_macro_f1_plot(
+    results: pd.DataFrame,
+    output_path: str | Path,
+    *,
+    feature_source: str = "frozen",
+) -> Path:
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     fig, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
@@ -210,12 +215,27 @@ def save_macro_f1_plot(results: pd.DataFrame, output_path: str | Path) -> Path:
     ax.bar(ordered["backbone"], ordered["macro_f1"], color="#2563eb")
     ax.set_ylim(0, max(float(ordered["macro_f1"].max()) * 1.15, 0.05))
     ax.set_ylabel("Validation macro-F1")
-    ax.set_title("Frozen single-backbone validation macro-F1")
+    title_source = _feature_source_title(feature_source)
+    ax.set_title(f"{title_source} single-backbone validation macro-F1")
     for index, value in enumerate(ordered["macro_f1"]):
         ax.text(index, float(value), f"{float(value):.3f}", ha="center", va="bottom", fontsize=9)
     fig.savefig(output, dpi=180)
     plt.close(fig)
     return output
+
+
+def _feature_source_title(feature_source: str) -> str:
+    replacements = {
+        "frozen": "Frozen",
+        "finetuned": "Fine-tuned",
+        "vit": "ViT",
+        "swin": "Swin",
+        "beit": "BEiT",
+        "last1": "last-1",
+        "last2": "last-2",
+        "lr5e6": "LR 5e-6",
+    }
+    return " ".join(replacements.get(part, part.capitalize()) for part in feature_source.split("_"))
 
 
 def _write_run_report_note(path: Path, run_config: dict[str, Any], metrics: dict[str, Any]) -> None:
