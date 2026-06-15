@@ -423,10 +423,19 @@ artifacts/report_assets/tables/e3c_metadata_augmented_summary.csv
 artifacts/report_assets/tables/e3c_metadata_vs_image_only_validation.csv
 artifacts/report_assets/tables/e3d_metadata_fusion_operator_summary.csv
 artifacts/report_assets/tables/e3d_metadata_fusion_vs_e3c_validation.csv
+artifacts/report_assets/tables/e3f_mixed_adaptation_summary.csv
+artifacts/report_assets/tables/e3f_mixed_adaptation_vs_controls.csv
+artifacts/report_assets/tables/e3g_prediction_ensemble_results.csv
+artifacts/report_assets/tables/e3g_prediction_ensemble_vs_controls.csv
+artifacts/report_assets/tables/e3g_prediction_ensemble_per_class_metrics.csv
 artifacts/report_assets/figures/finetuned_single_backbone_macro_f1.png
 artifacts/report_assets/figures/finetuned_fusion_macro_f1.png
 artifacts/report_assets/figures/e3c_metadata_augmented_macro_f1.png
 artifacts/report_assets/figures/e3d_metadata_fusion_operator_macro_f1.png
+artifacts/report_assets/figures/e3f_mixed_adaptation_macro_f1.png
+artifacts/report_assets/figures/e3g_prediction_ensemble_macro_f1.png
+artifacts/report_assets/figures/e3g_prediction_ensemble_per_class_f1.png
+artifacts/report_assets/figures/e3g_prediction_ensemble_error_overlap.png
 ```
 
 ## Verification Evidence
@@ -447,6 +456,17 @@ Local post-download verification confirmed:
 - E3d run configs record `test_policy=not_loaded_or_used_in_e3d`.
 - E3d metadata preprocessing artifacts record train-only fit and 19-dimensional metadata vectors.
 - E3d metadata fusion metadata records validation macro-F1 selection.
+- E3e conservative ViT feature cache shapes: train `(7008, 768)` and validation `(1504, 768)`.
+- E3e checkpoint metadata records validation macro-F1 selection and `not_loaded_or_used_in_e3e`.
+- E3f mixed source contains frozen ViT plus fine-tuned Swin/BEiT caches with train `7008` and
+  validation `1504` rows per backbone.
+- All 15 E3f prediction dumps contain `1504` validation rows and record
+  `test_policy=not_loaded_or_used_in_e3f`.
+- E3g ensemble inputs align exactly by `sample_id`, `image_id`, `lesion_id`, `split`, and
+  `true_label`.
+- E3g ensemble prediction dumps contain `1504` validation rows, seven finite probability columns,
+  and probability rows summing to `1.0`.
+- E3g run config records `test_policy=not_loaded_or_used_in_e3g`.
 - Report tables and figures are present under `artifacts/report_assets/`.
 - Generated checkpoints, feature caches, run artifacts, predictions, and report assets are ignored
   by Git.
@@ -475,6 +495,11 @@ Local post-download verification confirmed:
 - Multiple validation comparisons have been run across backbone, fusion, and MLP variants. Final
   conclusions should acknowledge validation over-selection risk and reserve the test split for a
   single final audit.
+- E3g improves validation macro-F1 substantially, but it is still a validation-only post-hoc
+  ensemble over already selected model families. It should be selected before test audit and then
+  evaluated once.
+- The E3g weighted-grid result (`0.7702`) is explicitly diagnostic because validation labels guide
+  the weight choice. The primary reportable low-overfit ensemble is `top3_family_equal` (`0.7665`).
 
 ## Robustness Checks
 
@@ -496,14 +521,12 @@ Completed:
 
 Remaining optional checks:
 
-1. Add paired bootstrap confidence intervals for the macro-F1 difference between `0.7298` and
-   `0.7262`.
-2. Compare confusion matrices for frozen ViT vs fine-tuned ViT, fine-tuned ViT+Swin vs fine-tuned
-   ViT+Swin+BEiT, and best fine-tuned fusion vs strongest frozen diagnostic.
-3. Add a fixed-vs-broken validation analysis to count samples corrected by the triple fusion model
-   and samples newly misclassified.
-4. If compute permits, run an E2b-style stronger MLP diagnostic on the fine-tuned concat features to
-   separate representation effects from downstream classifier capacity.
+1. Add paired bootstrap confidence intervals for E3g `top3_family_equal` versus E3d FiLM and E3f
+   mixed gated.
+2. If compute permits, run TTA/multi-view inference for the final frozen validation candidate before
+   the final test audit.
+3. If needed for methodology clarity, decide whether validation-weighted E3g grid weights are
+   allowed or whether only equal-weight ensembles can be final candidates.
 
 ## E3e Conservative ViT Fine-Tuning Diagnostic
 
@@ -597,6 +620,34 @@ E3g changes the practical validation-best candidate: the primary equal-weight pr
 now the strongest low-overfit validation result. The wording must remain validation-only. The final
 test audit should be run only after the ensemble choice is frozen.
 
+## Current Validation Leader
+
+The current validation-only ranking after E3e/E3f/E3g is:
+
+| Candidate | Role | Validation macro-F1 | Accuracy | Weighted-F1 | Selection note |
+|---|---|---:|---:|---:|---|
+| `top3_family_equal` prediction ensemble | Primary current validation candidate | `0.7665` | `0.8564` | `0.8576` | Equal-weight, low-overfit ensemble. |
+| `top3_grid_film_0p5_gated_0p25_e3f_0p25` | Weighted diagnostic | `0.7702` | `0.8557` | `0.8570` | Validation-weighted diagnostic, not primary. |
+| E3d FiLM metadata-conditioned fusion | Strongest single-family all-fine-tuned control | `0.7358 ± 0.0152` | `0.8390` | `0.8418` | Five-seed mean. |
+| E3f mixed metadata-gated fusion | Strongest mixed-source single-family control | `0.7361 ± 0.0100` | `0.8330` | `0.8368` | Five-seed mean; practical tie with E3d FiLM. |
+| E3b all-fine-tuned triple concat | Image-only fine-tuned control | `0.7246 ± 0.0143` | `0.8262` | `0.8305` | Five-seed mean. |
+
+For final model-selection language, `top3_family_equal` should be treated as the strongest
+validation-selected candidate because it uses a predefined equal-weight rule over seed-averaged
+families. The weighted-grid result is useful evidence that E3d FiLM should receive somewhat more
+probability mass, but it should remain a diagnostic unless the final methodology explicitly accepts
+validation-tuned ensemble weights.
+
+The main report should make the progression clear:
+
+1. Partial fine-tuning did not uniformly improve single backbones.
+2. Fine-tuned feature fusion improved validation performance modestly.
+3. Metadata-conditioned fusion improved the fixed-feature models further.
+4. Mixed frozen/fine-tuned source analysis showed that source choice interacts with the metadata
+   operator.
+5. Prediction-level ensembling produced the largest validation improvement without additional
+   training.
+
 ## Report-Ready Turkish Wording
 
 The following paragraphs avoid internal project-management language and can be adapted directly for
@@ -659,6 +710,47 @@ tek yönlü değildir: FiLM `mel` tarafında artış üretirken `akiec` ve `vasc
 göstermiştir. Bu nedenle bulgu, sınıf-bağımlı ve validation-only diagnostic evidence olarak
 raporlanmalıdır.
 
+ViT fine-tuning sonucundaki düşüşün yalnızca agresif unfreezing veya yüksek learning rate kaynaklı
+olup olmadığını incelemek için iki daha konservatif ViT fine-tuning koşulu çalıştırılmıştır. Son iki
+ViT bloğunun `5e-6` backbone learning rate ile açıldığı koşul single-backbone validation macro-F1'i
+`0.6694`, son tek bloğun açıldığı koşul ise `0.6685` üretmiştir. Aynı ViT cache'leri canonical
+fine-tuned Swin ve BEiT feature'larıyla birleştirildiğinde concat fusion sonuçları sırasıyla
+`0.7082` ve `0.7259` olmuştur. Bu sonuçlar, daha konservatif ViT update'lerinin frozen ViT
+baseline'ını (`0.6924`) geri kazanmadığını ve ana fine-tuned üçlü concat sonucunu (`0.7298`)
+aşmadığını göstermektedir. Dolayısıyla ViT tarafındaki düşüş, yalnızca fazla sayıda bloğun açılması
+veya learning rate'in yüksek kalmasıyla açıklanabilecek basit bir optimizasyon hatası gibi
+görünmemektedir; HAM10000 split büyüklüğü, class imbalance, checkpoint seçiminin macro-F1
+oynaklığı ve ViT representation'ının halihazırda güçlü frozen transfer sağlaması birlikte
+tartışılmalıdır.
+
+Backbone kaynak seçimini daha doğrudan test etmek için ViT frozen bırakılırken Swin ve BEiT'in
+fine-tuned feature cache'leri kullanılmıştır. Bu mixed-source concat koşulu `0.7142 ± 0.0126`
+validation macro-F1 ile all-fine-tuned triple concat kontrolünün (`0.7246 ± 0.0143`) altında
+kalmıştır. Buna karşılık aynı mixed-source feature'lar metadata-conditioned operator'larla
+birleştirildiğinde metadata-gated fusion `0.7361 ± 0.0100`, FiLM fusion ise `0.7267 ± 0.0191`
+üretmiştir. Mixed metadata-gated sonuç, all-fine-tuned FiLM sonucuyla (`0.7358 ± 0.0152`) pratik
+olarak aynı seviyededir. Bu bulgu, frozen ViT'in her durumda daha iyi olduğu şeklinde
+yorumlanmamalıdır; image-only concat'te mixed kaynak zayıflarken, metadata-gated operatörle güçlü
+bir alternatif haline gelmiştir. En doğru yorum, feature source seçimi ile fusion operator'ının
+birbirinden bağımsız olmadığıdır.
+
+Son olarak, yeni backbone eğitimi yapmadan prediction-level ensemble analizi uygulanmıştır. Bu
+analizde aynı validation split üzerinde üretilmiş prediction dump'ları `image_id`, `lesion_id`,
+`sample_id` ve label hizasıyla doğrulanmış; test split kullanılmamıştır. En güçlü düşük-overfit
+aday, seed-averaged all-fine-tuned FiLM, all-fine-tuned metadata-gated ve mixed-source
+metadata-gated model ailelerinin eşit ağırlıklı olasılık ortalaması olan equal-family ensemble'dır.
+Bu model `0.7665` validation macro-F1, `0.8564` accuracy ve `0.8576` weighted-F1 üretmiştir.
+Per-class F1 değerleri `akiec` `0.7527`, `bcc` `0.7712`, `bkl` `0.7251`, `df` `0.7805`, `nv`
+`0.9324`, `mel` `0.6279` ve `vasc` `0.7755` olarak ölçülmüştür. Bu sonuç,
+metadata-conditioned model aileleri arasında kalan hata farklılıklarının olasılık ortalamasıyla
+azaltılabildiğini göstermektedir.
+
+Validation üzerinde ağırlık taraması yapılan bir ensemble `0.7702` macro-F1'e ulaşmıştır; ancak bu
+sonuç validation label'larıyla ağırlık seçtiği için final model adayı olarak değil, diagnostic
+evidence olarak sunulmalıdır. Final değerlendirme öncesi en temkinli seçim, predefined
+equal-weight kuralı kullanan `top3_family_equal` ensemble'ıdır. Bu aday önce dondurulmalı, ardından
+test split yalnızca tek seferlik final audit için kullanılmalıdır.
+
 **BEiT yorumu:**
 
 BEiT standalone feature kaynağı olarak zayıf kalmıştır; fine-tuned single-backbone MLP sonucu
@@ -670,10 +762,14 @@ kaynağı olarak tartışılmalıdır.
 **Sınırlılıklar:**
 
 Sonuçlar validation-only değerlendirilmiştir. Ana fine-tuning checkpoint'leri tek seed ile üretilmiş,
-ancak downstream cached-feature MLP robustness ve metadata augmentation analizleri beş seed ile
-tekrarlanmıştır. Özellikle `df` ve `vasc` gibi düşük destekli sınıflarda az sayıda prediction
-değişimi per-class F1 ve macro-F1 üzerinde belirgin oynamalara neden olabilir. Bu nedenle en iyi
-validation adayının final değerlendirmesi, model seçimi tamamlandıktan sonra test split üzerinde tek
-seferlik audit olarak yapılmalıdır. Sonuçlar yalnızca HAM10000 benchmark dermoscopic image
-classification bağlamında raporlanmalı; klinik tanı, hasta güvenliği veya deploy edilebilir medikal
-performans iddiası kurulmamalıdır.
+ancak downstream cached-feature MLP robustness, metadata augmentation, metadata-conditioned fusion
+ve mixed-source analizleri beş seed ile tekrarlanmıştır. Prediction-level ensemble sonuçları yeni
+eğitim maliyeti eklemeden en yüksek validation macro-F1'i vermiş olsa da, bu aşama seçilmiş model
+aileleri üzerinde post-hoc validation analizi olduğu için over-selection riski taşır. Bu nedenle
+weighted-grid ensemble sonucu diagnostic olarak ayrılmalı; final aday olarak yalnız predefined
+equal-weight ensemble veya önceden sabitlenmiş başka bir seçim kuralı kullanılmalıdır. Özellikle
+`df` ve `vasc` gibi düşük destekli sınıflarda az sayıda prediction değişimi per-class F1 ve macro-F1
+üzerinde belirgin oynamalara neden olabilir. En iyi validation adayının final değerlendirmesi, model
+seçimi tamamlandıktan sonra test split üzerinde tek seferlik audit olarak yapılmalıdır. Sonuçlar
+yalnızca HAM10000 benchmark dermoscopic image classification bağlamında raporlanmalı; klinik tanı,
+hasta güvenliği veya deploy edilebilir medikal performans iddiası kurulmamalıdır.
