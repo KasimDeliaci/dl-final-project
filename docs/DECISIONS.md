@@ -260,3 +260,20 @@ literaturu de TTA ve probability averaging'i destekler, fakat bu adim policy sea
 validation over-selection riski artar. Bu nedenle E3h tek, onceden sabitlenmis, geometry-safe
 `rot4` policy ile sinirlandirilir. Test split E3h'de yuklenmeyecek; E3h final aday olursa test
 yalniz E4 final audit icin kullanilacaktir.
+
+## D042 - E3i Simple Fusion TTA Scope
+
+Karar: E3i, E3h'deki negatif rot4 sonucunun zaten guclu bir metadata-conditioned probability
+ensemble uzerinde TTA uygulanmasindan kaynaklanip kaynaklanmadigini test etmek icin daha sade
+image-only cached-feature fusion modellerine odaklanacaktir. Kapsam yalniz fine-tuned
+`vit_b16+swin_tiny+beit_base` concat seed 42, fine-tuned `vit_b16+swin_tiny+beit_base`
+`weighted_learned_512` seed 42 ve fine-tuned `vit_b16+swin_tiny` concat seed 42 run'larini icerir.
+Primary policy yine yalniz `tta_rot4 = identity + rot90 + rot180 + rot270` olacaktir.
+
+Gerekçe: Eski `dl-assignment` projesinde TTA, final ensemble'a dogrudan eklenmeden once daha sade
+fine-tuned/weighted model uzerinde validation-gated olarak fayda gostermisti. Bu projede E3h rot4
+uygulamasi E3g top3 ensemble'ini dusurdugu icin en temiz takip deneyi TTA'yi model-family
+ensembling oncesindeki sade fusion modellerinde test etmektir. `weighted_pca_384` E3i disinda
+tutulur, cunku mevcut artifact'lerde fitted PCA component'leri saklanmadigindan rotated validation
+feature'lari icin ayni preprocessing'i yeniden uygulamak mumkun degildir. Test split E3i'de
+yuklenmeyecek ve validation-tuned TTA weight aramasi yapilmayacaktir.

@@ -412,6 +412,53 @@ Implementation plan: E3h is recorded in `docs/exec-plans/active/e3h-tta-rot4-inf
 Implementation support is in `src/dl_final/evaluation/tta.py` and
 `scripts/evaluate_tta_rot4.py`. Test split must not be loaded or transformed for E3h.
 
+### E3i - Simple Fusion Rot4 TTA Diagnostic
+
+Status: active
+
+Question: Does deterministic four-view right-angle rotation TTA improve simpler image-only
+cached-feature MLP/fusion models before metadata-conditioned seed/family ensembling is applied?
+
+Hypothesis: E3h may have applied TTA too late, after a strong probability ensemble had already
+stabilized many errors. Applying the same fixed rot4 policy to simpler concat and learned-weighted
+fusion models may recover the model-level TTA gain observed in the older CNN project.
+
+Changed variable: Inference-time deterministic TTA view averaging over selected simple fusion
+models only.
+
+Fixed controls: Existing lesion-aware split, existing fine-tuned feature extractors, existing saved
+MLP/fusion weights, saved train-fitted scaler statistics, validation-only comparison, no test split
+usage.
+
+Selection rule: E3i is diagnostic. The primary table compares each candidate run's stored no-TTA
+validation macro-F1 against its rot4-averaged validation macro-F1. A simple equal average across
+candidate runs may be reported as diagnostic context, but it is not a new validation-tuned ensemble
+selection rule.
+
+Candidate runs:
+
+- fine-tuned `vit_b16+swin_tiny+beit_base` concat seed 42,
+- fine-tuned `vit_b16+swin_tiny+beit_base` weighted learned 512 seed 42,
+- fine-tuned `vit_b16+swin_tiny` concat seed 42.
+
+Required artifacts:
+
+- TTA policy record,
+- identity sanity-check table,
+- per-view validation metrics,
+- per-run no-TTA vs rot4 comparison,
+- validation prediction dumps,
+- per-class delta table,
+- corrected-vs-broken table,
+- report-ready tables and figures.
+
+Report role: Inference-time diagnostic to determine whether the negative E3h result is specific to
+the already-ensembled metadata-conditioned model family.
+
+Implementation plan: E3i is recorded in `docs/exec-plans/active/e3i-simple-fusion-tta.md`.
+Implementation support is in `scripts/evaluate_simple_tta_rot4.py`. Test split must not be loaded
+or transformed for E3i.
+
 ### E4 - Final Model Selection and Audit
 
 Status: planned

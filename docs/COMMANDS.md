@@ -963,6 +963,77 @@ print("E3h artifact integrity check passed.")
 PY
 ```
 
+## E3i Simple Fusion Rot4 TTA
+
+E3i is a validation-only follow-up to E3h. It runs the same fixed `tta_rot4` policy on simpler
+image-only fusion models before metadata-conditioned family ensembling. Full validation should run
+on Colab GPU, not on the local laptop.
+
+Colab runner:
+
+```text
+notebooks/07_e3i_simple_tta_rot4.ipynb
+```
+
+The notebook restores inputs from `MyDrive/dl-final-artifact/artifacts/`. If that tree is not
+complete, it can also restore `MyDrive/dl-final-artifact/e3i_simple_tta_rot4/e3i_simple_tta_inputs.tar`,
+whose archive root should contain `artifacts/...`.
+
+Local smoke only:
+
+```bash
+PYTHONPATH=src uv run python scripts/evaluate_simple_tta_rot4.py \
+  --max-samples 8 \
+  --batch-size 4 \
+  --num-workers 0 \
+  --device auto \
+  --no-mixed-precision
+```
+
+Full Colab command:
+
+```bash
+PYTHONUNBUFFERED=1 PYTHONPATH=src uv run python scripts/evaluate_simple_tta_rot4.py \
+  --batch-size 128 \
+  --num-workers 2 \
+  --device cuda \
+  --identity-tolerance 1e-3
+```
+
+E3i artifact integrity check:
+
+```bash
+PYTHONPATH=src uv run python - <<'PY'
+from pathlib import Path
+import json
+import pandas as pd
+
+from dl_final.evaluation.tta import probabilities_from_frame
+
+class_names = ["akiec", "bcc", "bkl", "df", "nv", "mel", "vasc"]
+run = Path("artifacts/runs/e3i_simple_tta_rot4")
+config = json.loads((run / "run_config.json").read_text())
+assert config["test_policy"] == "not_loaded_or_used_in_e3i"
+assert config["views"] == ["identity", "rot90", "rot180", "rot270"]
+
+results = pd.read_csv(run / "tta_run_results.csv")
+assert set(results["fusion_method"]) <= {"concat", "weighted_learned_512"}
+
+identity = pd.read_csv(run / "tta_identity_sanity.csv")
+if not identity["passed"].all():
+    print(identity.loc[~identity["passed"], ["run_alias", "max_abs_probability_delta"]])
+    print("WARNING: strict identity parity exceeded tolerance for the rows above.")
+
+for path in sorted(run.glob("predictions_*_tta_rot4.csv")):
+    pred = pd.read_csv(path)
+    assert len(pred) == 1504, path
+    assert set(pred["split"].astype(str)) == {"val"}
+    _ = probabilities_from_frame(pred, class_names)
+
+print("E3i artifact integrity check passed.")
+PY
+```
+
 ## Colab Commands
 
 GPU gerektiren full transformer extraction ve fine-tuning işleri Sprint 2+ sırasında Colab'de çalıştırılabilir. Büyük artifact akışı için Drive root:

@@ -18,3 +18,7 @@ Kurallar:
 - `06_e3h_tta_rot4.ipynb`: E3h validation-only rot4 TTA diagnostic. This runner restores existing
   E3d/E3f/E3g artifacts, runs inference-only probability averaging on Colab GPU, and syncs outputs
   under `MyDrive/dl-final-artifact/e3h_tta_rot4/`.
+- `07_e3i_simple_tta_rot4.ipynb`: E3i validation-only rot4 TTA diagnostic for simpler image-only
+  fusion models. This runner restores fine-tuned feature/checkpoint/run artifacts, runs
+  inference-only TTA on Colab GPU, and syncs outputs under
+  `MyDrive/dl-final-artifact/e3i_simple_tta_rot4/`.
