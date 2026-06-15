@@ -343,7 +343,7 @@ Result note: E3f completed as a validation-only cached-feature ablation. The mix
 
 ### E3g - Prediction-Level Ensemble Diagnostic
 
-Status: planned
+Status: completed
 
 Question: E3d and E3f top validation candidates are nearly tied but show different per-class behavior. Can validation-only probability averaging over existing prediction dumps reduce seed/model-family variance and improve validation macro-F1?
 
@@ -367,7 +367,9 @@ Required artifacts:
 
 Report role: Post-hoc validation-only robustness and score-oriented diagnostic before considering heavier TTA/multi-view extraction.
 
-Implementation plan: E3g is recorded in `docs/exec-plans/active/e3g-prediction-ensemble.md`. Test split must not be loaded or transformed for E3g.
+Implementation plan: E3g is recorded in `docs/exec-plans/completed/e3g-prediction-ensemble.md`. Test split was not loaded or transformed for E3g.
+
+Result note: E3g completed as a validation-only prediction ensemble diagnostic. The strongest primary equal-weight ensemble, `top3_family_equal`, averaged the seed-averaged E3d FiLM, E3d gated, and E3f mixed gated probability outputs with equal family weights and reached validation macro-F1 `0.7665`, accuracy `0.8564`, and weighted-F1 `0.8576`. This is the strongest low-overfit validation-only result so far. A small weighted-grid diagnostic reached `0.7702` macro-F1 with E3d FiLM `0.50`, E3d gated `0.25`, and E3f gated `0.25`, but it is reported as exploratory because the weights are selected under validation-label pressure. Error-overlap analysis showed incomplete family redundancy, especially between E3d FiLM and E3f gated (`0.6690` error Jaccard), supporting the ensemble gain. Test metrics were not computed.
 
 ### E4 - Final Model Selection and Audit
 

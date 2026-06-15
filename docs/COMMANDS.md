@@ -850,6 +850,48 @@ print("E3f artifact integrity check passed.")
 PY
 ```
 
+## E3g Prediction-Level Ensemble
+
+Build validation-only probability ensembles from existing E3d/E3f prediction dumps:
+
+```bash
+PYTHONPATH=src uv run python scripts/ensemble_predictions.py
+```
+
+To skip validation-weighted diagnostic grids and run only primary equal-weight ensembles:
+
+```bash
+PYTHONPATH=src uv run python scripts/ensemble_predictions.py \
+  --skip-weighted-diagnostics
+```
+
+E3g artifact integrity check:
+
+```bash
+PYTHONPATH=src uv run python - <<'PY'
+from pathlib import Path
+import json
+import pandas as pd
+
+run = Path("artifacts/runs/e3g_prediction_ensemble")
+config = json.loads((run / "run_config.json").read_text())
+assert config["test_policy"] == "not_loaded_or_used_in_e3g"
+
+results = pd.read_csv(run / "ensemble_results.csv")
+assert "top3_family_equal" in set(results["ensemble_id"])
+
+for path in sorted(run.glob("ensemble_predictions_*.csv")):
+    frame = pd.read_csv(path)
+    assert len(frame) == 1504, path
+    prob_cols = [col for col in frame.columns if col.startswith("prob_")]
+    assert len(prob_cols) == 7, path
+    assert frame[prob_cols].notna().all().all(), path
+    assert ((frame[prob_cols].sum(axis=1) - 1).abs() < 1e-4).all(), path
+
+print("E3g artifact integrity check passed.")
+PY
+```
+
 ## Colab Commands
 
 GPU gerektiren full transformer extraction ve fine-tuning işleri Sprint 2+ sırasında Colab'de çalıştırılabilir. Büyük artifact akışı için Drive root:

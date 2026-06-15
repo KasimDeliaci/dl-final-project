@@ -491,6 +491,8 @@ Completed:
    the canonical ViT single-backbone drop was caused by overly aggressive adaptation.
 5. E3f tested a mixed adaptation source that kept ViT frozen while using fine-tuned Swin and BEiT
    features, then reran image-only concat and metadata-conditioned FiLM/gated operators.
+6. E3g tested validation-only prediction-level ensembles over the strongest E3d/E3f family
+   prediction dumps.
 
 Remaining optional checks:
 
@@ -564,6 +566,36 @@ only about `+0.0003` macro-F1, and per-class analysis shows a class-dependent tr
 improved `df` strongly relative to E3d gated (`0.7156 -> 0.8449`) but reduced `akiec`, `bcc`, and
 `vasc`. Because `df` has only `18` validation examples, this result is useful as a source/operator
 interaction diagnostic rather than final evidence that frozen ViT is broadly superior.
+
+## E3g Prediction-Level Ensemble Diagnostic
+
+E3g tested whether probability averaging over existing validation prediction dumps could reduce seed
+variance and combine complementary model-family behavior. No new model was trained, no feature cache
+was regenerated, and the test split was not loaded.
+
+Primary equal-weight ensembles:
+
+| Ensemble | Weighting | Validation macro-F1 | Accuracy | Weighted-F1 |
+|---|---|---:|---:|---:|
+| `top3_family_equal` | E3d FiLM + E3d gated + E3f gated, equal family weights | `0.7665` | `0.8564` | `0.8576` |
+| `e3d_film_plus_e3f_gated_equal` | E3d FiLM + E3f gated, `0.5/0.5` | `0.7587` | `0.8517` | `0.8533` |
+| `e3d_film_seed_avg` | E3d FiLM seed average | `0.7537` | `0.8491` | `0.8505` |
+| `e3d_gated_plus_e3f_gated_equal` | E3d gated + E3f gated, `0.5/0.5` | `0.7463` | `0.8464` | `0.8481` |
+| `e3d_gated_seed_avg` | E3d gated seed average | `0.7413` | `0.8451` | `0.8468` |
+| `e3f_gated_seed_avg` | E3f gated seed average | `0.7393` | `0.8391` | `0.8420` |
+
+The strongest primary result is `top3_family_equal`, which reached `0.7665` validation macro-F1.
+This is a substantial validation improvement over the previous E3d/E3f family means. It also
+improves several macro-F1-sensitive classes simultaneously: `akiec` F1 `0.7527`, `bcc` `0.7712`,
+`mel` `0.6279`, and `vasc` `0.7755`.
+
+A small weighted-grid diagnostic reached `0.7702` macro-F1 with E3d FiLM weight `0.50`, E3d gated
+weight `0.25`, and E3f gated weight `0.25`. Because this weighting is chosen under validation-label
+pressure, it should be reported as exploratory evidence rather than the main model-selection result.
+
+E3g changes the practical validation-best candidate: the primary equal-weight prediction ensemble is
+now the strongest low-overfit validation result. The wording must remain validation-only. The final
+test audit should be run only after the ensemble choice is frozen.
 
 ## Report-Ready Turkish Wording
 

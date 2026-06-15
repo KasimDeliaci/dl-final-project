@@ -239,3 +239,9 @@ Gerekçe: E3f, frozen ViT'in metadata-gated fusion ile rekabetci kalabilecegini 
 Karar: E3g, mevcut E3d/E3f validation prediction dump'lari uzerinde post-hoc probability averaging deneyi olarak planlanacaktir. Primary ensemble kosullari equal-weight olacaktir: E3d FiLM seed-average, E3d gated seed-average, E3f mixed gated seed-average, E3d FiLM + E3f gated equal, E3d gated + E3f gated equal ve top-3 family equal. Weighted grid aramasi yapilirsa kucuk ve diagnostic olarak etiketlenecektir.
 
 Gerekçe: E3d ve E3f en guclu adaylari validation macro-F1 acisindan pratik beraberliktedir, fakat per-class davranislari farklidir. Literature-backed ensemble/TTA pratikleri skin lesion classification challenge'larinda skor artisi icin yaygindir; ancak unrestricted validation weight search raporun guvenilirligini zedeler. Bu nedenle E3g once low-overfit equal-weight probability averaging ile sinirlandirilir. Test split kullanilmayacaktir.
+
+## D040 - E3g Ensemble Result Interpretation
+
+Karar: E3g sonucunda primary validation adayi `top3_family_equal` prediction ensemble olarak kaydedilecektir. Bu ensemble E3d FiLM, E3d gated ve E3f mixed gated family'lerinin seed-averaged probability output'larini esit agirlikla birlestirmis ve `0.7665` validation macro-F1, `0.8564` accuracy, `0.8576` weighted-F1 uretmistir. Weighted grid diagnostic'te `0.7702` macro-F1 elde edilmistir, ancak bu sonuc validation-label pressure nedeniyle ana model-selection sonucu olarak degil exploratory diagnostic olarak raporlanacaktir.
+
+Gerekçe: Equal-weight ensemble yeni egitim, test access, class-specific threshold tuning veya unrestricted weight search kullanmadan onceki E3d/E3f validation sonuclarini belirgin sekilde asmistir. Family error-overlap tam olmadigi icin probability averaging farkli hata profillerinden faydalanmistir. Buna ragmen E3g halen validation-only bir sonuc oldugundan final test audit yapilmadan genelleme veya klinik performans iddiasi kurulmayacaktir.
