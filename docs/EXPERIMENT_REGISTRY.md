@@ -311,6 +311,36 @@ Implementation plan: E3e is recorded in `docs/exec-plans/completed/e3e-conservat
 
 Result note: E3e completed as a validation-only Colab diagnostic. Conservative ViT single-backbone features did not recover the frozen ViT baseline: `last_2_blocks + LR 5e-6` reached `0.6694` validation macro-F1 and `last_1_block + LR 5e-6` reached `0.6685`, both below frozen ViT (`0.6924`) and canonical fine-tuned ViT (`0.6876`). Mixed ViT+Swin+BEiT concat with canonical fine-tuned Swin/BEiT caches was stronger for the last-1 policy (`0.7259`) than the last-2 lower-LR policy (`0.7082`), but did not exceed the canonical seed-42 fine-tuned triple concat (`0.7298`) or the E3d metadata-conditioned validation means. E3e is therefore reported as a negative but informative fine-tuning sensitivity ablation, not as a replacement for the main fine-tuned fusion result. Test metrics were not computed.
 
+### E3f - Frozen ViT + Fine-Tuned Swin/BEiT Mixed Adaptation
+
+Status: completed
+
+Question: ViT fine-tuning single-backbone macro-F1'i dusururken Swin ve BEiT fine-tuning kazanc gosterdi. ViT'i frozen strong control olarak tutup Swin/BEiT'i fine-tuned kullanmak, all-fine-tuned triple feature source'a gore daha iyi veya daha stabil validation macro-F1 uretir mi?
+
+Hypothesis: Frozen ViT feature'lari zaten guclu oldugu icin ViT'i fine-tune etmek zorunlu olmayabilir. Buna karsilik Swin ve BEiT'in fine-tuned feature'lari frozen hallerine gore daha iyi oldugundan, mixed adaptation source (`frozen_vit_finetuned_swin_beit`) daha dengeli bir representation seti olusturabilir.
+
+Changed variable: Backbone-level feature source assignment only. `vit_b16` uses frozen cache; `swin_tiny` and `beit_base` use canonical fine-tuned caches. No new transformer fine-tuning is run.
+
+Fixed controls: Canonical lesion-aware train/validation split, train-only scaling, train-only metadata preprocessing, class weighting, validation macro-F1 selection, no test metrics.
+
+Selection rule: Compare multi-seed validation macro-F1 for mixed image-only concat and mixed metadata-conditioned FiLM/gated operators against E3b/E3c/E3d all-fine-tuned controls. No test split usage.
+
+Required artifacts:
+
+- mixed feature source manifest,
+- image-only concat MLP runs over seeds `7,13,42,101,202`,
+- metadata FiLM and metadata-gated runs over the same seeds,
+- summary tables,
+- per-class metrics,
+- prediction dumps,
+- comparison against E3b/E3c/E3d controls.
+
+Report role: Backbone-level adaptation ablation testing whether ViT should remain frozen while Swin/BEiT are adapted.
+
+Implementation plan: E3f is recorded in `docs/exec-plans/completed/e3f-mixed-frozen-vit-finetuned-swin-beit.md`. Test split was not loaded or transformed for E3f.
+
+Result note: E3f completed as a validation-only cached-feature ablation. The mixed image-only concat source (`frozen vit_b16 + fine-tuned swin_tiny + fine-tuned beit_base`) reached `0.7142 ± 0.0126` mean validation macro-F1, below the all-fine-tuned triple concat control (`0.7246 ± 0.0143`). Metadata-conditioned results were stronger: mixed FiLM reached `0.7267 ± 0.0191`, while mixed metadata-gated fusion reached `0.7361 ± 0.0100`. The mixed gated mean is numerically the highest current validation-only multi-seed mean and is essentially tied with E3d all-fine-tuned FiLM (`0.7358 ± 0.0152`). Per-class behavior is mixed: the mean gain is driven mainly by `df`, while `akiec`, `bcc`, and `vasc` decline relative to E3d all-fine-tuned gated. The result is reported as source/operator interaction evidence, not as a decisive final model conclusion. Test metrics were not computed.
+
 ### E4 - Final Model Selection and Audit
 
 Status: planned

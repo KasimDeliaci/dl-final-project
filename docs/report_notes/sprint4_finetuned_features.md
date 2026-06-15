@@ -489,6 +489,8 @@ Completed:
    features and compared them against E3c raw concat + metadata.
 4. E3e tested two conservative ViT-only partial fine-tuning policies in Colab to diagnose whether
    the canonical ViT single-backbone drop was caused by overly aggressive adaptation.
+5. E3f tested a mixed adaptation source that kept ViT frozen while using fine-tuned Swin and BEiT
+   features, then reran image-only concat and metadata-conditioned FiLM/gated operators.
 
 Remaining optional checks:
 
@@ -537,6 +539,31 @@ E3e should therefore be reported as a negative but informative ablation: more co
 fine-tuning did not improve the main validation-best model, but it clarified that ViT feature
 transfer is sensitive to the fine-tuning protocol and that the frozen ViT representation remains a
 strong control. The main fine-tuned fusion conclusion should remain anchored to E3b/E3c/E3d.
+
+## E3f Mixed Frozen ViT + Fine-Tuned Swin/BEiT Diagnostic
+
+E3f tested whether the strongest frozen single-backbone representation should remain frozen while
+the weaker-but-improved Swin and BEiT representations use their fine-tuned caches. No new backbone
+fine-tuning was run. The mixed source used frozen `vit_b16` plus fine-tuned `swin_tiny` and
+`beit_base` features.
+
+| Condition | Seeds | Mean validation macro-F1 | Std | Min | Max |
+|---|---|---:|---:|---:|---:|
+| Mixed frozen ViT + fine-tuned Swin/BEiT, metadata-gated | `7,13,42,101,202` | `0.7361` | `0.0100` | `0.7260` | `0.7481` |
+| Mixed frozen ViT + fine-tuned Swin/BEiT, FiLM | `7,13,42,101,202` | `0.7267` | `0.0191` | `0.7016` | `0.7494` |
+| Mixed frozen ViT + fine-tuned Swin/BEiT, concat | `7,13,42,101,202` | `0.7142` | `0.0126` | `0.6943` | `0.7275` |
+
+The mixed image-only concat result underperformed the all-fine-tuned triple concat mean
+(`0.7246 ± 0.0143`), so replacing fine-tuned ViT with frozen ViT does not improve the image-only
+fusion representation by itself. The metadata-gated mixed condition, however, reached
+`0.7361 ± 0.0100`, which is numerically the highest mean among the current validation-only
+multi-seed conditions and essentially tied with E3d all-fine-tuned FiLM (`0.7358 ± 0.0152`).
+
+This should be described as a practical tie, not a decisive win. The difference over E3d FiLM is
+only about `+0.0003` macro-F1, and per-class analysis shows a class-dependent tradeoff: mixed gated
+improved `df` strongly relative to E3d gated (`0.7156 -> 0.8449`) but reduced `akiec`, `bcc`, and
+`vasc`. Because `df` has only `18` validation examples, this result is useful as a source/operator
+interaction diagnostic rather than final evidence that frozen ViT is broadly superior.
 
 ## Report-Ready Turkish Wording
 

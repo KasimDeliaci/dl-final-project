@@ -768,6 +768,88 @@ print("Sprint 4 artifact integrity check passed.")
 PY
 ```
 
+## E3f Mixed Frozen ViT + Fine-Tuned Swin/BEiT
+
+Create the mixed feature source without overwriting canonical frozen or fine-tuned caches:
+
+```bash
+PYTHONPATH=src uv run python scripts/create_mixed_feature_source.py \
+  --output-source frozen_vit_finetuned_swin_beit \
+  --mapping vit_b16=frozen swin_tiny=finetuned beit_base=finetuned \
+  --overwrite
+```
+
+Run image-only concat over five downstream MLP seeds:
+
+```bash
+for seed in 7 13 42 101 202; do
+  PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+    --feature-source frozen_vit_finetuned_swin_beit \
+    --only-combination vit_b16 swin_tiny beit_base \
+    --fusion-methods concat \
+    --device cpu \
+    --batch-size 128 \
+    --seed "$seed" \
+    --experiment-id E3f \
+    --test-policy not_loaded_or_used_in_e3f \
+    --run-tag e3f_mixed_adaptation \
+    --skip-export
+done
+```
+
+Run metadata-conditioned FiLM and gated operators over the same seeds:
+
+```bash
+for seed in 7 13 42 101 202; do
+  PYTHONPATH=src uv run python scripts/train_metadata_fusion_operator.py \
+    --feature-source frozen_vit_finetuned_swin_beit \
+    --operators triple_metadata_film triple_metadata_gated_backbone \
+    --device cpu \
+    --batch-size 128 \
+    --seed "$seed" \
+    --experiment-id E3f \
+    --test-policy not_loaded_or_used_in_e3f \
+    --run-tag e3f_mixed_adaptation
+done
+```
+
+Summarize E3f:
+
+```bash
+PYTHONPATH=src uv run python scripts/summarize_e3f_mixed_adaptation.py
+```
+
+E3f artifact integrity check:
+
+```bash
+PYTHONPATH=src uv run python - <<'PY'
+from pathlib import Path
+import pandas as pd
+import torch
+
+from dl_final.features.cache import feature_cache_path, load_feature_cache
+
+root = Path("artifacts/features/ham10000/frozen_vit_finetuned_swin_beit")
+expected = {"train": 7008, "val": 1504}
+for backbone in ["vit_b16", "swin_tiny", "beit_base"]:
+    for split, rows in expected.items():
+        cache = load_feature_cache(feature_cache_path(root / backbone, split))
+        assert tuple(cache.features.shape) == (rows, 768), (backbone, split)
+        assert torch.isfinite(cache.features).all(), (backbone, split)
+
+paths = sorted(Path("artifacts/runs").glob("*e3f_mixed_adaptation*/predictions.csv"))
+assert len(paths) == 15, len(paths)
+for path in paths:
+    frame = pd.read_csv(path)
+    assert len(frame) == 1504, path
+    prob_cols = [col for col in frame.columns if col.startswith("prob_")]
+    assert len(prob_cols) == 7, path
+    assert frame[prob_cols].notna().all().all(), path
+
+print("E3f artifact integrity check passed.")
+PY
+```
+
 ## Colab Commands
 
 GPU gerektiren full transformer extraction ve fine-tuning işleri Sprint 2+ sırasında Colab'de çalıştırılabilir. Büyük artifact akışı için Drive root:
