@@ -371,6 +371,46 @@ Implementation plan: E3g is recorded in `docs/exec-plans/completed/e3g-predictio
 
 Result note: E3g completed as a validation-only prediction ensemble diagnostic. The strongest primary equal-weight ensemble, `top3_family_equal`, averaged the seed-averaged E3d FiLM, E3d gated, and E3f mixed gated probability outputs with equal family weights and reached validation macro-F1 `0.7665`, accuracy `0.8564`, and weighted-F1 `0.8576`. This is the strongest low-overfit validation-only result so far. A small weighted-grid diagnostic reached `0.7702` macro-F1 with E3d FiLM `0.50`, E3d gated `0.25`, and E3f gated `0.25`, but it is reported as exploratory because the weights are selected under validation-label pressure. Error-overlap analysis showed incomplete family redundancy, especially between E3d FiLM and E3f gated (`0.6690` error Jaccard), supporting the ensemble gain. Test metrics were not computed.
 
+### E3h - Rot4 Test-Time Augmentation Diagnostic
+
+Status: planned
+
+Question: Can deterministic four-view right-angle rotation TTA improve the validation macro-F1 of
+the E3g `top3_family_equal` prediction ensemble without training new models or using the test split?
+
+Hypothesis: Probability averaging over `identity`, `rot90`, `rot180`, and `rot270` views may
+stabilize predictions for the strongest metadata-conditioned E3d/E3f model families and improve
+validation macro-F1 over the no-TTA E3g ensemble.
+
+Changed variable: Inference-time deterministic TTA view averaging only.
+
+Fixed controls: Existing lesion-aware split, existing E3d/E3f MLP weights, saved train-fitted
+scaler statistics, saved metadata preprocessing, equal-family ensemble rule, validation-only
+selection, no test split usage.
+
+Selection rule: Primary result is `top3_family_equal_tta_rot4`, using equal probability averaging
+across TTA views, seeds, and the three E3g families. A validation macro-F1 gain below `+0.002` over
+E3g is a practical tie; `+0.002` to `< +0.005` is suggestive; `>= +0.005` is meaningful only if
+per-class behavior is acceptable.
+
+Required artifacts:
+
+- TTA policy record,
+- identity sanity-check table,
+- validation prediction dumps,
+- validation metrics,
+- per-class metrics,
+- confusion matrix,
+- corrected-vs-broken analysis against E3g,
+- runtime metadata,
+- report-ready tables and figures.
+
+Report role: Inference-time robustness diagnostic for the strongest validation-selected ensemble.
+Not a new training or representation-learning result.
+
+Implementation plan: E3h is recorded in `docs/exec-plans/active/e3h-tta-rot4-inference.md`. Test
+split must not be loaded or transformed for E3h.
+
 ### E4 - Final Model Selection and Audit
 
 Status: planned

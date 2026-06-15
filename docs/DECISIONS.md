@@ -245,3 +245,18 @@ Gerekçe: E3d ve E3f en guclu adaylari validation macro-F1 acisindan pratik bera
 Karar: E3g sonucunda primary validation adayi `top3_family_equal` prediction ensemble olarak kaydedilecektir. Bu ensemble E3d FiLM, E3d gated ve E3f mixed gated family'lerinin seed-averaged probability output'larini esit agirlikla birlestirmis ve `0.7665` validation macro-F1, `0.8564` accuracy, `0.8576` weighted-F1 uretmistir. Weighted grid diagnostic'te `0.7702` macro-F1 elde edilmistir, ancak bu sonuc validation-label pressure nedeniyle ana model-selection sonucu olarak degil exploratory diagnostic olarak raporlanacaktir.
 
 Gerekçe: Equal-weight ensemble yeni egitim, test access, class-specific threshold tuning veya unrestricted weight search kullanmadan onceki E3d/E3f validation sonuclarini belirgin sekilde asmistir. Family error-overlap tam olmadigi icin probability averaging farkli hata profillerinden faydalanmistir. Buna ragmen E3g halen validation-only bir sonuc oldugundan final test audit yapilmadan genelleme veya klinik performans iddiasi kurulmayacaktir.
+
+## D041 - E3h Rot4 TTA Scope
+
+Karar: E3h, E3g `top3_family_equal` ensemble'inin deterministic right-angle rotation TTA ile
+iyilesip iyilesmedigini validation-only olarak test edecektir. Primary policy yalniz
+`tta_rot4 = identity + rot90 + rot180 + rot270` olacaktir. `tta_flip4`, `tta_d4_8`, color/crop
+augmentation, validation-tuned TTA weights, yeni backbone fine-tuning ve yeni downstream MLP egitimi
+bu ilk E3h kapsaminda yapilmayacaktir.
+
+Gerekçe: Eski `dl-assignment` projesinde validation-gated TTA faydali olmus, ancak daha fazla view
+ve train-time augmentation otomatik olarak daha iyi sonuc vermemistir. Skin-lesion classification
+literaturu de TTA ve probability averaging'i destekler, fakat bu adim policy search'e donerse
+validation over-selection riski artar. Bu nedenle E3h tek, onceden sabitlenmis, geometry-safe
+`rot4` policy ile sinirlandirilir. Test split E3h'de yuklenmeyecek; E3h final aday olursa test
+yalniz E4 final audit icin kullanilacaktir.
