@@ -19,6 +19,10 @@ Alt sorular:
 - Fine-tuning sonrası BEiT üçüncü backbone olarak faydalı kalıyor mu?
 - Fine-tuning gain hangi sınıflarda görülüyor?
 - Fine-tuning compute/runtime maliyeti bu kazanımı makul kılıyor mu?
+- Fine-tuned transformer feature'larına structured HAM10000 metadata'sı eklendiğinde küçük de olsa
+  tamamlayıcı validation sinyali oluşuyor mu?
+- Metadata sinyali raw concat yerine lightweight conditioning operator'larıyla kullanıldığında
+  validation macro-F1 daha güçlü veya daha stabil hale geliyor mu?
 
 ## Fine-Tuning Policy
 
@@ -53,6 +57,7 @@ Checkpoint selection uses validation macro-F1 only. Test metrics are not compute
 - Class order: `akiec`, `bcc`, `bkl`, `df`, `nv`, `mel`, `vasc`.
 - Downstream classifier: cached-feature MLP with train-only StandardScaler and train-only class
   weights.
+- Metadata diagnostic input fields: `age`, `sex`, `localization` only.
 - Primary metric: validation macro-F1.
 
 ## Frozen Baselines To Compare Against
@@ -90,6 +95,8 @@ artifacts/runs/*_s2_finetuned_*_none_mlp*_seed42/
 artifacts/runs/*_s3_finetuned_*_mlp*_seed42/
 artifacts/report_assets/tables/single_backbone_finetuned_results.csv
 artifacts/report_assets/tables/finetuned_fusion_results.csv
+artifacts/report_assets/tables/e3c_metadata_augmented_summary.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_operator_summary.csv
 ```
 
 Verification evidence should include:
@@ -100,6 +107,7 @@ Verification evidence should include:
 - Feature cache alignment by `sample_id`, `image_id`, `lesion_id`, label, and split row order.
 - No NaN/Inf in features or probabilities.
 - Prediction dump row count `1504`.
+- Metadata preprocessing fit only on train split.
 - Confusion matrix label order fixed.
 - Generated artifacts ignored by Git.
 
@@ -205,9 +213,154 @@ artifacts/report_assets/tables/s4b_multiseed_cpu_diagnostic_results.csv
 artifacts/report_assets/tables/s4b_multiseed_cpu_diagnostic_summary.csv
 ```
 
-## Per-Class Behavior
+## E3c Metadata-Augmented Feature Diagnostic
 
-Best validation-only configuration: `ViT + Swin + BEiT concat`.
+After the cached-feature robustness check, a validation-only metadata diagnostic was run to test
+whether structured HAM10000 benchmark metadata provides complementary signal to fine-tuned
+transformer features. This diagnostic did not repeat transformer fine-tuning and did not use the
+test split.
+
+Allowed metadata fields:
+
+```text
+age
+sex
+localization
+```
+
+Excluded fields:
+
+```text
+dx
+dx_type
+dataset
+image_id
+sample_id
+lesion_id
+image_path
+```
+
+Metadata preprocessing was fit on the train split only. Age used train-median imputation and
+train-only scaling. `sex` and `localization` used train-fitted categorical vocabularies. The final
+metadata vector had 19 dimensions: one scaled age feature, three `sex` categories, and fifteen
+`localization` categories.
+
+E3c multi-seed validation results:
+
+| Condition | Seeds | Mean macro-F1 | Std | Min | Max | Mean accuracy | Mean weighted-F1 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Fine-tuned ViT + Swin + BEiT concat + metadata | `7,13,42,101,202` | `0.7278` | `0.0058` | `0.7213` | `0.7363` | `0.8278` | `0.8316` |
+| Fine-tuned ViT + Swin concat + metadata | `7,13,42,101,202` | `0.7230` | `0.0138` | `0.7082` | `0.7376` | `0.8257` | `0.8298` |
+| Metadata-only MLP | `7,13,42,101,202` | `0.2202` | `0.0077` | `0.2093` | `0.2297` | `0.3983` | `0.4738` |
+
+Image-only E3b controls:
+
+| Condition | Mean macro-F1 | Std | Min | Max |
+|---|---:|---:|---:|---:|
+| Fine-tuned ViT + Swin + BEiT concat | `0.7246` | `0.0143` | `0.7032` | `0.7413` |
+| Fine-tuned ViT + Swin concat | `0.7160` | `0.0085` | `0.7070` | `0.7291` |
+| Fine-tuned ViT single | `0.6801` | `0.0084` | `0.6722` | `0.6906` |
+
+The metadata-augmented triple concat condition produced the highest mean validation macro-F1 among
+the checked cached-feature candidates (`0.7278 ± 0.0058`). This is a small improvement over the
+image-only fine-tuned triple concat control (`0.7246 ± 0.0143`), not a large step change.
+
+The metadata-only classifier remained weak (`0.2202 ± 0.0077`), so the result should not be
+interpreted as metadata being independently sufficient. The appropriate interpretation is that
+structured benchmark metadata may add a small complementary signal when appended to strong
+fine-tuned transformer features.
+
+Per-class behavior was mixed. For fine-tuned ViT+Swin+BEiT concat, metadata improved mean F1 most
+clearly for `akiec` (`+0.0282`) and slightly for `bcc`, `df`, `nv`, and `vasc`, but reduced `bkl`
+(`-0.0163`) and left `mel` essentially unchanged (`-0.0018`). For fine-tuned ViT+Swin concat,
+metadata improved `df` (`+0.0239`), `vasc` (`+0.0138`), and `nv` (`+0.0060`) while slightly reducing
+`mel` (`-0.0029`). This should be reported as class-dependent benchmark behavior rather than a
+uniform improvement.
+
+Generated E3c diagnostic tables:
+
+```text
+artifacts/report_assets/tables/e3c_metadata_augmented_results.csv
+artifacts/report_assets/tables/e3c_metadata_augmented_summary.csv
+artifacts/report_assets/tables/e3c_metadata_augmented_per_class_metrics.csv
+artifacts/report_assets/tables/e3c_metadata_per_class_delta_vs_image_only.csv
+artifacts/report_assets/tables/e3c_metadata_vs_image_only_validation.csv
+artifacts/report_assets/figures/e3c_metadata_augmented_macro_f1.png
+```
+
+## E3d Metadata Fusion Operator Ablation
+
+E3c showed that raw metadata concatenation produced a small positive signal. E3d then tested whether
+metadata works better as a conditioning signal over image representations rather than only as an
+appended tabular vector. This ablation used fixed fine-tuned ViT, Swin, and BEiT feature caches and
+did not use the test split.
+
+Operators:
+
+| Operator | Mechanism |
+|---|---|
+| Metadata FiLM | Metadata MLP predicts bounded scale/shift over concatenated image features. |
+| Metadata-gated backbone | Metadata MLP predicts sample-level gates for ViT, Swin, and BEiT feature blocks. |
+| Metadata two-branch | Image features and metadata are processed in separate branches, then fused at hidden level. |
+
+E3d multi-seed validation results:
+
+| Condition | Seeds | Mean macro-F1 | Std | Min | Max | Mean accuracy | Mean weighted-F1 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Metadata FiLM | `7,13,42,101,202` | `0.7358` | `0.0152` | `0.7158` | `0.7529` | `0.8390` | `0.8418` |
+| Metadata-gated backbone | `7,13,42,101,202` | `0.7347` | `0.0112` | `0.7189` | `0.7453` | `0.8356` | `0.8390` |
+| Metadata two-branch | `7,13,42,101,202` | `0.7328` | `0.0103` | `0.7207` | `0.7450` | `0.8323` | `0.8366` |
+
+Controls:
+
+| Condition | Mean macro-F1 | Std |
+|---|---:|---:|
+| E3c raw concat + metadata | `0.7278` | `0.0058` |
+| E3b image-only fine-tuned triple concat | `0.7246` | `0.0143` |
+| E3c metadata-only MLP | `0.2202` | `0.0077` |
+
+All three metadata-conditioned operators exceeded the E3c raw concat + metadata control in mean
+validation macro-F1. The highest mean came from bounded FiLM-style conditioning, while gated
+backbone fusion was nearly tied and somewhat less variable.
+
+This should still be framed as a fusion result. Metadata-only performance was weak in E3c
+(`0.2202 ± 0.0077`), so the strongest E3d result is not evidence that metadata alone is sufficient.
+The dominant representation remains the fused fine-tuned ViT, Swin, and BEiT image feature space;
+metadata acts as a lightweight conditioning signal over that fused representation.
+
+Per-class behavior remains class-dependent. Compared with E3c raw concat, FiLM improved `mel`
+(`+0.0354`), `bcc` (`+0.0221`), `df` (`+0.0103`), `nv` (`+0.0076`), and `bkl` (`+0.0042`), but
+reduced `akiec` (`-0.0112`) and `vasc` (`-0.0123`). Gated backbone fusion improved `akiec`,
+`bcc`, `mel`, and `vasc`, but reduced `df`. Two-branch fusion improved `df` and `mel`, but reduced
+`vasc`.
+
+The metadata-gated backbone diagnostic produced validation-wide mean gates ViT `0.5674`, Swin
+`0.4461`, and BEiT `0.2944`. These values are model internals and must not be interpreted as a
+direct backbone quality ranking.
+
+Recommended interpretation:
+
+> Lightweight metadata-conditioned fusion improved validation macro-F1 over raw metadata
+> concatenation, suggesting that structured benchmark metadata is more useful when it modulates
+> fine-tuned transformer representations. The effect is still validation-only and class-dependent,
+> so it should be reported as diagnostic evidence rather than a final clinical or test conclusion.
+
+Generated E3d diagnostic tables:
+
+```text
+artifacts/report_assets/tables/e3d_metadata_fusion_operator_results.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_operator_summary.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_operator_per_class_metrics.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_per_class_delta_vs_e3c.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_vs_e3c_validation.csv
+artifacts/report_assets/tables/e3d_metadata_gate_summary.csv
+artifacts/report_assets/figures/e3d_metadata_fusion_operator_macro_f1.png
+```
+
+## Image-Fusion Per-Class Behavior
+
+Best E3 single-seed image-fusion configuration before metadata conditioning:
+`ViT + Swin + BEiT concat`.
 
 | Label | Support | Precision | Recall | F1 |
 |---|---:|---:|---:|---:|
@@ -266,8 +419,14 @@ artifacts/report_assets/tables/single_backbone_finetuned_per_class_metrics.csv
 artifacts/report_assets/tables/finetuned_fusion_results.csv
 artifacts/report_assets/tables/finetuned_fusion_per_class_metrics.csv
 artifacts/report_assets/tables/finetuned_fusion_vs_single_validation.csv
+artifacts/report_assets/tables/e3c_metadata_augmented_summary.csv
+artifacts/report_assets/tables/e3c_metadata_vs_image_only_validation.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_operator_summary.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_vs_e3c_validation.csv
 artifacts/report_assets/figures/finetuned_single_backbone_macro_f1.png
 artifacts/report_assets/figures/finetuned_fusion_macro_f1.png
+artifacts/report_assets/figures/e3c_metadata_augmented_macro_f1.png
+artifacts/report_assets/figures/e3d_metadata_fusion_operator_macro_f1.png
 ```
 
 ## Verification Evidence
@@ -280,19 +439,32 @@ Local post-download verification confirmed:
   and split.
 - Feature tensors and prediction probabilities contain no NaN/Inf.
 - All 12 fine-tuned prediction dumps contain `1504` validation rows.
+- All 15 E3c metadata diagnostic prediction dumps contain `1504` validation rows.
 - Run configs record `test_policy=not_used_in_sprint4`.
+- E3c run configs record `test_policy=not_loaded_or_used_in_e3c`.
+- E3c metadata preprocessing artifacts record train-only fit and 19-dimensional metadata vectors.
+- All 15 E3d metadata fusion prediction dumps contain `1504` validation rows.
+- E3d run configs record `test_policy=not_loaded_or_used_in_e3d`.
+- E3d metadata preprocessing artifacts record train-only fit and 19-dimensional metadata vectors.
+- E3d metadata fusion metadata records validation macro-F1 selection.
 - Report tables and figures are present under `artifacts/report_assets/`.
 - Generated checkpoints, feature caches, run artifacts, predictions, and report assets are ignored
   by Git.
 
 ## Limitations
 
-- Results are expected to be single-seed unless a later multi-seed extension is added.
+- The original fine-tuned feature extraction and single-seed downstream matrix were run once; E3b
+  and E3c add multi-seed downstream diagnostics over fixed cached features, not repeated
+  fine-tuning.
 - Fine-tuning is partial, not full-model adaptation.
 - Colab GPU runtime and memory may force batch-size or epoch adjustments.
 - Validation macro-F1 is the selection signal; test audit is intentionally reserved for the final
   audit stage.
 - Low-support classes such as `df` and `vasc` must be interpreted with support counts visible.
+- Metadata may encode benchmark-specific correlations and should not be interpreted as evidence of
+  clinical generalization.
+- Metadata-conditioned fusion operators add classifier complexity over fixed cached features; their
+  validation gains should be weighed against seed variability and per-class tradeoffs.
 - The `0.7298` versus `0.7262` comparison is not a perfectly isolated representation comparison:
   the fine-tuned result uses three backbones with the modest MLP recipe, while the frozen diagnostic
   uses two frozen backbones with a stronger `deep_reg` MLP. The result identifies the current
@@ -311,6 +483,10 @@ Completed:
 1. E3b reran downstream cached-feature MLPs with multiple seeds for the top candidates:
    `ViT+Swin+BEiT finetuned concat`, `ViT+Swin finetuned concat`, fine-tuned ViT single, and the
    frozen E2b `ViT+Swin concat deep_reg` reference.
+2. E3c tested structured benchmark metadata (`age`, `sex`, `localization`) appended to fixed
+   fine-tuned transformer features over five downstream MLP seeds.
+3. E3d tested lightweight metadata-conditioned fusion operators over fixed fine-tuned transformer
+   features and compared them against E3c raw concat + metadata.
 
 Remaining optional checks:
 
@@ -365,6 +541,26 @@ ViT+Swin concat deep_reg ise `0.7077 ± 0.0124` ortalama vermiştir. Bu sonuç, 
 adayının ortalama olarak güçlü kaldığını, ancak validation seed variance nedeniyle sonucun yine
 temkinli yorumlanması gerektiğini göstermektedir.
 
+Yapısal HAM10000 metadata'sının etkisini ölçmek için yaş, cinsiyet ve lezyon lokalizasyonu
+bilgileri train-only preprocessing ile fine-tuned transformer feature'larına eklenmiştir. Beş seed
+ortalamasında ViT+Swin+BEiT concat + metadata koşulu `0.7278 ± 0.0058` validation macro-F1 üretmiş,
+image-only fine-tuned triple concat kontrolü ise `0.7246 ± 0.0143` seviyesinde kalmıştır. ViT+Swin
+concat + metadata koşulu da image-only pair concat kontrolünü (`0.7160 ± 0.0085`) aşarak
+`0.7230 ± 0.0138` değerine ulaşmıştır. Buna karşılık metadata-only MLP'nin düşük sonucu
+(`0.2202 ± 0.0077`), metadata'nın tek başına yeterli olmadığını göstermektedir. Bu bulgu, structured
+benchmark metadata'nın fine-tuned transformer representation'lara küçük ve sınıf-bağımlı
+tamamlayıcı sinyal ekleyebildiği şeklinde temkinli yorumlanmalıdır.
+
+Metadata'nın yalnızca input'a append edilmesi yerine image representation'ı condition etmesi de
+kontrollü bir ablation olarak değerlendirilmiştir. Bounded FiLM-style metadata conditioning
+`0.7358 ± 0.0152`, metadata-gated backbone fusion `0.7347 ± 0.0112`, two-branch image/metadata
+fusion ise `0.7328 ± 0.0103` validation macro-F1 üretmiştir. Üç operator da raw concat + metadata
+kontrolünü aşmıştır. Bu sonuç, structured metadata'nın fine-tuned transformer feature'larını
+modüle ettiğinde daha güçlü validation sinyali verebildiğini düşündürmektedir. Ancak per-class etki
+tek yönlü değildir: FiLM `mel` tarafında artış üretirken `akiec` ve `vasc` tarafında düşüş
+göstermiştir. Bu nedenle bulgu, sınıf-bağımlı ve validation-only diagnostic evidence olarak
+raporlanmalıdır.
+
 **BEiT yorumu:**
 
 BEiT standalone feature kaynağı olarak zayıf kalmıştır; fine-tuned single-backbone MLP sonucu
@@ -375,9 +571,11 @@ kaynağı olarak tartışılmalıdır.
 
 **Sınırlılıklar:**
 
-Sonuçlar validation-only ve single-seed olarak değerlendirilmiştir. Özellikle `df` ve `vasc` gibi
-düşük destekli sınıflarda az sayıda prediction değişimi per-class F1 ve macro-F1 üzerinde belirgin
-oynamalara neden olabilir. Bu nedenle en iyi validation adayının final değerlendirmesi, model seçimi
-tamamlandıktan sonra test split üzerinde tek seferlik audit olarak yapılmalıdır. Sonuçlar yalnızca
-HAM10000 benchmark dermoscopic image classification bağlamında raporlanmalı; klinik tanı, hasta
-güvenliği veya deploy edilebilir medikal performans iddiası kurulmamalıdır.
+Sonuçlar validation-only değerlendirilmiştir. Ana fine-tuning checkpoint'leri tek seed ile üretilmiş,
+ancak downstream cached-feature MLP robustness ve metadata augmentation analizleri beş seed ile
+tekrarlanmıştır. Özellikle `df` ve `vasc` gibi düşük destekli sınıflarda az sayıda prediction
+değişimi per-class F1 ve macro-F1 üzerinde belirgin oynamalara neden olabilir. Bu nedenle en iyi
+validation adayının final değerlendirmesi, model seçimi tamamlandıktan sonra test split üzerinde tek
+seferlik audit olarak yapılmalıdır. Sonuçlar yalnızca HAM10000 benchmark dermoscopic image
+classification bağlamında raporlanmalı; klinik tanı, hasta güvenliği veya deploy edilebilir medikal
+performans iddiası kurulmamalıdır.

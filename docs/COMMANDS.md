@@ -474,6 +474,121 @@ artifacts/report_assets/tables/s4b_multiseed_cpu_diagnostic_results.csv
 artifacts/report_assets/tables/s4b_multiseed_cpu_diagnostic_summary.csv
 ```
 
+E3c metadata-augmented cached-feature diagnostic:
+
+```bash
+for seed in 7 13 42 101 202; do
+  PYTHONPATH=src uv run python scripts/train_metadata_augmented_mlp.py \
+    --condition metadata_only ft_vit_swin_concat_plus_metadata ft_vit_swin_beit_concat_plus_metadata \
+    --device cpu \
+    --batch-size 128 \
+    --seed "$seed" \
+    --run-tag e3c_metadata
+done
+
+PYTHONPATH=src uv run python scripts/summarize_e3c_metadata.py
+```
+
+Creates:
+
+```text
+artifacts/runs/*_e3c_metadata_*_seed*/
+artifacts/report_assets/tables/e3c_metadata_augmented_results.csv
+artifacts/report_assets/tables/e3c_metadata_augmented_summary.csv
+artifacts/report_assets/tables/e3c_metadata_augmented_per_class_metrics.csv
+artifacts/report_assets/tables/e3c_metadata_per_class_delta_vs_image_only.csv
+artifacts/report_assets/tables/e3c_metadata_vs_image_only_validation.csv
+artifacts/report_assets/figures/e3c_metadata_augmented_macro_f1.png
+```
+
+E3c artifact integrity check:
+
+```bash
+PYTHONPATH=src uv run python - <<'PY'
+from pathlib import Path
+import json
+import numpy as np
+import pandas as pd
+
+runs = sorted(Path("artifacts/runs").glob("*e3c_metadata*/run_config.json"))
+assert len(runs) == 15, len(runs)
+for config_path in runs:
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    predictions = pd.read_csv(config_path.parent / "predictions.csv")
+    metadata = json.loads((config_path.parent / "metadata_preprocessing.json").read_text())
+    runtime = json.loads((config_path.parent / "runtime_metadata.json").read_text())
+    assert config["experiment_id"] == "E3c"
+    assert config["test_policy"] == "not_loaded_or_used_in_e3c"
+    assert runtime["test_rows_loaded"] == 0
+    assert len(predictions) == 1504
+    probability_columns = [col for col in predictions.columns if col.startswith("prob_")]
+    assert len(probability_columns) == 7
+    assert np.isfinite(predictions[probability_columns].to_numpy()).all()
+    assert metadata["metadata_preprocessor"]["fit_split"] == "train"
+    assert metadata["metadata_preprocessor"]["output_dim"] == 19
+print("E3c artifact integrity check passed.")
+PY
+```
+
+E3d metadata fusion operator ablation:
+
+```bash
+for seed in 7 13 42 101 202; do
+  PYTHONPATH=src uv run python scripts/train_metadata_fusion_operator.py \
+    --operators triple_metadata_gated_backbone triple_metadata_film triple_metadata_two_branch \
+    --device cpu \
+    --batch-size 128 \
+    --seed "$seed" \
+    --run-tag e3d_metadata_fusion
+done
+
+PYTHONPATH=src uv run python scripts/summarize_e3d_metadata_fusion.py
+```
+
+Creates:
+
+```text
+artifacts/runs/*_e3d_metadata_fusion_*_seed*/
+artifacts/report_assets/tables/e3d_metadata_fusion_operator_results.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_operator_summary.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_operator_per_class_metrics.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_per_class_delta_vs_e3c.csv
+artifacts/report_assets/tables/e3d_metadata_fusion_vs_e3c_validation.csv
+artifacts/report_assets/tables/e3d_metadata_gate_summary.csv
+artifacts/report_assets/figures/e3d_metadata_fusion_operator_macro_f1.png
+```
+
+E3d artifact integrity check:
+
+```bash
+PYTHONPATH=src uv run python - <<'PY'
+from pathlib import Path
+import json
+import numpy as np
+import pandas as pd
+
+runs = sorted(Path("artifacts/runs").glob("*e3d_metadata_fusion*/run_config.json"))
+assert len(runs) == 15, len(runs)
+for config_path in runs:
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    predictions = pd.read_csv(config_path.parent / "predictions.csv")
+    metadata = json.loads((config_path.parent / "metadata_preprocessing.json").read_text())
+    fusion = json.loads((config_path.parent / "metadata_fusion_metadata.json").read_text())
+    runtime = json.loads((config_path.parent / "runtime_metadata.json").read_text())
+    assert config["experiment_id"] == "E3d"
+    assert config["test_policy"] == "not_loaded_or_used_in_e3d"
+    assert runtime["test_rows_loaded"] == 0
+    assert len(predictions) == 1504
+    probability_columns = [col for col in predictions.columns if col.startswith("prob_")]
+    assert len(probability_columns) == 7
+    assert np.isfinite(predictions[probability_columns].to_numpy()).all()
+    assert metadata["metadata_preprocessor"]["fit_split"] == "train"
+    assert metadata["metadata_preprocessor"]["output_dim"] == 19
+    assert fusion["selection_metric"] == "validation_macro_f1"
+print("E3d artifact integrity check passed.")
+PY
+```
+
 Quality checks:
 
 ```bash
@@ -483,7 +598,118 @@ PYTHONPATH=src uv run python -m pytest \
   tests/test_sprint2_features.py \
   tests/test_sprint3_fusion.py \
   tests/test_representation_complementarity.py \
-  tests/test_sprint4_finetune.py
+  tests/test_sprint4_finetune.py \
+  tests/test_metadata_features.py \
+  tests/test_e3c_metadata_augmented.py \
+  tests/test_metadata_fusion_models.py \
+  tests/test_e3d_metadata_fusion.py
+```
+
+## E3e Conservative ViT Fine-Tuning Diagnostic
+
+Colab runner:
+
+```text
+notebooks/05_e3e_conservative_vit_finetuning.ipynb
+```
+
+Drive output namespace:
+
+```text
+MyDrive/dl-final-artifact/e3e_conservative_vit/
+```
+
+Local smoke run:
+
+```bash
+PYTHONPATH=src uv run python scripts/finetune_backbone.py \
+  --config configs/experiments/e3e_vit_last1_lr5e6.yaml \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --backbones vit_b16 \
+  --epochs 1 \
+  --batch-size 1 \
+  --num-workers 0 \
+  --limit-per-split 2 \
+  --no-pretrained \
+  --no-mixed-precision \
+  --checkpoint-dir artifacts/checkpoints_smoke/ham10000/e3e_vit_last1_lr5e6 \
+  --feature-root artifacts/features_smoke \
+  --run-root artifacts/runs_smoke
+```
+
+Colab full fine-tuning commands:
+
+```bash
+PYTHONUNBUFFERED=1 PYTHONPATH=src uv run python scripts/finetune_backbone.py \
+  --config configs/experiments/e3e_vit_last2_lr5e6.yaml \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --backbones vit_b16 \
+  --batch-size 16 \
+  --num-workers 2
+
+PYTHONUNBUFFERED=1 PYTHONPATH=src uv run python scripts/finetune_backbone.py \
+  --config configs/experiments/e3e_vit_last1_lr5e6.yaml \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --backbones vit_b16 \
+  --batch-size 16 \
+  --num-workers 2
+```
+
+E3e ViT single-backbone MLP:
+
+```bash
+PYTHONPATH=src uv run python scripts/train_mlp.py \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --feature-source finetuned_vit_last2_lr5e6 \
+  --backbones vit_b16 \
+  --batch-size 128 \
+  --experiment-id E3e \
+  --test-policy not_loaded_or_used_in_e3e \
+  --run-tag e3e_vit_single
+
+PYTHONPATH=src uv run python scripts/train_mlp.py \
+  --dataset-config configs/dataset/selected_dataset.yaml \
+  --feature-source finetuned_vit_last1_lr5e6 \
+  --backbones vit_b16 \
+  --batch-size 128 \
+  --experiment-id E3e \
+  --test-policy not_loaded_or_used_in_e3e \
+  --run-tag e3e_vit_single
+```
+
+E3e mixed-source triple concat after copying canonical Swin/BEiT caches into the mixed source:
+
+```bash
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --feature-source finetuned_vit_last2_lr5e6_plus_s4_swin_beit \
+  --only-combination vit_b16 swin_tiny beit_base \
+  --fusion-methods concat \
+  --batch-size 128 \
+  --experiment-id E3e \
+  --test-policy not_loaded_or_used_in_e3e \
+  --run-tag e3e_mixed_triple
+
+PYTHONPATH=src uv run python scripts/run_fusion_matrix.py \
+  --feature-source finetuned_vit_last1_lr5e6_plus_s4_swin_beit \
+  --only-combination vit_b16 swin_tiny beit_base \
+  --fusion-methods concat \
+  --batch-size 128 \
+  --experiment-id E3e \
+  --test-policy not_loaded_or_used_in_e3e \
+  --run-tag e3e_mixed_triple
+```
+
+Optional metadata-conditioned follow-up, only if validation results justify it:
+
+```bash
+PYTHONPATH=src uv run python scripts/train_metadata_fusion_operator.py \
+  --feature-source finetuned_vit_last1_lr5e6_plus_s4_swin_beit \
+  --operators triple_metadata_film triple_metadata_gated_backbone \
+  --device cpu \
+  --batch-size 128 \
+  --experiment-id E3e \
+  --test-policy not_loaded_or_used_in_e3e \
+  --run-tag e3e_metadata_followup
 ```
 
 Sprint 4 commands read train/validation only and do not compute test metrics. Full fine-tuning can

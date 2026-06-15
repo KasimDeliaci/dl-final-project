@@ -69,6 +69,23 @@ def test_transformer_finetuning_policy_unfreezes_only_target_regions() -> None:
         )
 
 
+def test_vit_last_1_block_policy_unfreezes_only_final_block() -> None:
+    model = build_classification_backbone("vit_b16", num_classes=7, pretrained=False)
+    summary = apply_finetuning_policy(model, "vit_b16", policy="last_1_block")
+    params = dict(model.named_parameters())
+    trainable = {name for name, parameter in params.items() if parameter.requires_grad}
+
+    assert summary["policy"] == "last_1_block"
+    assert any(name.startswith("blocks.11") for name in trainable)
+    assert not any(name.startswith("blocks.10") for name in trainable)
+    assert any(name.startswith("head") for name in trainable)
+    assert all(
+        not parameter.requires_grad
+        for name, parameter in params.items()
+        if name.startswith("blocks.0")
+    )
+
+
 def test_finetuned_checkpoint_feature_extractor_shape(tmp_path: Path) -> None:
     model = build_classification_backbone("vit_b16", num_classes=7, pretrained=False)
     checkpoint_path = tmp_path / "vit_best.pt"
@@ -142,3 +159,8 @@ def test_finetuned_fusion_runner_uses_e3_and_sprint4_test_policy() -> None:
     ]
     assert runner._experiment_id_for_source("finetuned") == "E3"
     assert runner._test_policy_for_source("finetuned") == "not_used_in_sprint4"
+    assert runner._test_policy_for_source("finetuned_vit_last1_lr5e6") == "not_used_in_sprint4"
+    assert runner._test_policy_for_source(
+        "finetuned_vit_last1_lr5e6",
+        "not_loaded_or_used_in_e3e",
+    ) == "not_loaded_or_used_in_e3e"

@@ -179,3 +179,39 @@ Gerekçe: Fine-tuned single-backbone sonuçları karışıktır: ViT frozen base
 Karar: Sprint 4 sonrası robustness kontrolü, full fine-tuning'i tekrar etmek yerine sabit frozen/fine-tuned feature cache'leri üzerinde downstream MLP seed'lerini değiştiren E3b diagnostic olarak yürütülmüştür. E3b CPU üzerinde seed `7`, `13`, `42`, `101`, `202` ile `vit_b16+swin_tiny+beit_base finetuned concat`, `vit_b16+swin_tiny finetuned concat`, `vit_b16 finetuned single` ve `vit_b16+swin_tiny frozen concat deep_reg` koşullarını tekrarlar. Test seti kullanılmaz.
 
 Gerekçe: Sprint 4 ana sorusu feature transfer ve fusion karşılaştırmasıdır; checkpoint'leri yeniden fine-tune etmek pahalıdır ve farklı bir deney değişkeni ekler. Cached-feature MLP seed diagnostic ucuzdur ve `0.7298` ile `0.7262` gibi küçük validation farklarının downstream initialization'a ne kadar duyarlı olduğunu ölçer. CPU kullanımı, eski E2b frozen diagnostic ile cihaz farkını azaltır. Sonuçlar fine-tuned triple concat'in en yüksek mean validation macro-F1'i verdiğini (`0.7246 ± 0.0143`) ancak seed varyansının görünür olduğunu göstermiştir; bu nedenle E3b final seçim disiplinini değiştirmez, yorumun güven düzeyini kalibre eder.
+
+## D030 - E3c Metadata-Augmented Feature Fusion Diagnostic
+
+Karar: E3c, yeni transformer fine-tuning yapmadan sabit cached feature'lara HAM10000 benchmark metadata'sı ekleyen validation-only diagnostic olarak yürütülecektir. Model input metadata alanları yalnız `age`, `sex` ve `localization` ile sınırlıdır. `dx`, `dx_type`, `dataset`, `image_id`, `sample_id`, `lesion_id` ve path/source alanları model input'una dahil edilmeyecektir.
+
+Gerekçe: E3/E3b sonuçları fine-tuned triple concat'in güçlü fakat yakın farkla önde olduğunu göstermiştir. Literatürde skin-lesion image feature'larının age, sex ve anatomical site metadata'sı ile birleştirilmesi yaygın bir multimodal benchmark yaklaşımıdır. Bu repo için en temiz sonraki soru, yeni backbone veya test-probe eklemeden structured metadata'nın fine-tuned transformer feature transfer'a tamamlayıcı sinyal sağlayıp sağlamadığını ölçmektir. Metadata preprocessing train-only fit edilecek, test split yüklenmeyecek ve sonuçlar validation macro-F1 ile multi-seed mean/std üzerinden raporlanacaktır.
+
+## D031 - E3c Metadata Result Interpretation
+
+Karar: E3c sonucu final selection'ı tek başına değiştiren kesin bir model üstünlüğü olarak değil, fine-tuned transformer feature fusion'a structured benchmark metadata'nın küçük ve sınıf-bağımlı tamamlayıcı sinyal ekleyebildiğini gösteren diagnostic evidence olarak yorumlanacaktır. En güçlü E3c koşulu `vit_b16+swin_tiny+beit_base concat + metadata` olmuştur (`0.7278 ± 0.0058` validation macro-F1), fakat image-only E3b triple concat mean'i (`0.7246 ± 0.0143`) ile fark küçüktür.
+
+Gerekçe: Metadata-only MLP'nin düşük kalması (`0.2202 ± 0.0077`) metadata'nın tek başına yeterli olmadığını gösterir. Plus-metadata koşulları image-only kontrollere göre küçük mean macro-F1 artışı üretmiştir; ancak per-class etki karışıktır (`akiec` ve bazı küçük sınıflarda artış, `bkl`/`mel` tarafında küçük düşüşler). Bu nedenle rapor dili "metadata may provide small complementary benchmark signal" çizgisinde kalmalı, klinik genelleme veya deployment iddiası kurulmamalıdır. Test seti hâlâ kullanılmamıştır.
+
+## D032 - E3d Lightweight Metadata Fusion Operator Scope
+
+Karar: E3d, E3c'nin raw metadata concat sonucunu genişleten fakat end-to-end multimodal transformer mimarisi kurmayan lightweight cached-feature ablation olarak yürütülecektir. Canonical koşullar yalnız fine-tuned `vit_b16+swin_tiny+beit_base` triple feature seti üzerinde çalışır: metadata-gated backbone fusion, bounded FiLM-style metadata conditioning ve two-branch image/metadata MLP. E3c raw concat + metadata ve E3b image-only triple concat sonuçları kontrol olarak kullanılacaktır.
+
+Gerekçe: Güncel multimodal skin-lesion literatürü metadata ile image representation'ı birleştirirken concat, weighted/gated fusion ve attention/cross-attention gibi operator'ları karşılaştırır. Bu repo için en uygun ek ablation, test-probe veya yeni Colab fine-tuning eklemeden metadata'nın image feature'ları yalnızca append etmek yerine modüle edip etmediğini ölçmektir. Büyük cross-attention mimarisi, balanced sampler, class-aware loss, train-time augmentation ve yeni fine-tuning bu kapsamın dışındadır. Test seti kullanılmayacak; sonuçlar validation macro-F1 mean/std ve per-class behavior ile raporlanacaktır.
+
+## D033 - E3d Metadata Fusion Operator Result Interpretation
+
+Karar: E3d sonucunda en yüksek mean validation macro-F1 bounded FiLM-style metadata conditioning ile elde edilmiştir (`0.7358 ± 0.0152`). Metadata-gated backbone fusion (`0.7347 ± 0.0112`) ve two-branch image/metadata fusion (`0.7328 ± 0.0103`) da E3c raw concat + metadata kontrolünü (`0.7278 ± 0.0058`) aşmıştır. Bu bulgu, structured metadata'nın yalnız input'a append edilmek yerine image representation'ı condition ettiğinde daha güçlü validation sinyali verebildiğini gösteren limited diagnostic evidence olarak yorumlanacaktır.
+
+Gerekçe: Üç operator da mean macro-F1'i artırmıştır, fakat per-class davranış tek yönlü değildir. FiLM `mel` F1'i artırırken `akiec` ve `vasc` tarafında düşüş üretmiştir; gated fusion `akiec`, `bcc`, `mel` ve `vasc` için artış üretirken `df` düşmüştür; two-branch fusion `df` ve `mel` tarafında iyileşirken `vasc` düşmüştür. Bu nedenle E3d sonucu "advanced metadata fusion uniformly improves classification" şeklinde değil, "metadata-conditioned lightweight fusion can improve validation macro-F1 with class-dependent tradeoffs" şeklinde raporlanacaktır. Gated fusion'daki learned gate değerleri model içi diagnostic olarak kalır; backbone kalite sıralaması veya klinik açıklama olarak yorumlanmaz. Test seti hâlâ kullanılmamıştır.
+
+## D034 - E3e Conservative ViT Fine-Tuning Scope
+
+Karar: E3e, canonical Sprint 4 ViT fine-tuning düşüşünü inceleyen dar bir Colab diagnostic olacaktır. Yalnız `vit_b16` yeniden fine-tune edilir: `last_2_blocks + backbone LR 5e-6` ve `last_1_block + backbone LR 5e-6`. Canonical `finetuned` artifact'leri overwrite edilmez; E3e checkpoint ve feature cache'leri `e3e_vit_last2_lr5e6`, `e3e_vit_last1_lr5e6`, `finetuned_vit_last2_lr5e6` ve `finetuned_vit_last1_lr5e6` namespace'lerinde tutulur.
+
+Gerekçe: Frozen ViT single validation macro-F1 `0.6924` iken canonical fine-tuned ViT single `0.6876` olmuştur. Bu küçük düşüş, fine-tuning'in tamamen faydasız olduğunu değil, ViT'in unfreeze depth ve backbone LR ayarlarına hassas olabileceğini gösterebilir. Medical-image transfer learning literatürü fine-tuning strategy'nin modality ve architecture'a bağlı olduğunu, ViT literatürü ise daha sınırlı parameter adaptation'ın geçerli bir compute/overfit kontrolü olduğunu destekler. E3e bu soruyu broad augmentation, class-aware loss, deeper unfreeze veya yeni backbone eklemeden test eder.
+
+## D035 - E3e Validation and Colab Artifact Policy
+
+Karar: E3e test split'i yüklemez, test metric üretmez ve final model seçimi yapmaz. Checkpoint seçimi validation macro-F1 ile yapılır. Downstream kontroller önce E3e ViT single MLP, sonra yeni ViT cache'i canonical Swin/BEiT cache'leriyle karıştıran validation-only triple concat koşusudur. Metadata-conditioned FiLM/gated follow-up yalnız validation sonuçları bunu makul kılarsa çalıştırılır.
+
+Gerekçe: Eski `dl-assignment` lessons learned, son aşamada çok fazla training varyantı açmanın raporu dağıttığını gösterdi. E3e bu yüzden tek backbone, iki policy ve ayrı Drive namespace ile sınırlıdır. Colab çıktıları `/content/drive/MyDrive/dl-final-artifact/e3e_conservative_vit/` altına senkronize edilir; canonical Sprint 4 cache'leri yalnız okunur ve mixed-source kopyaları ayrı `finetuned_vit_*_plus_s4_swin_beit` klasörlerine yazılır.

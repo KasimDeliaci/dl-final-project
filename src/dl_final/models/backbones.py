@@ -223,6 +223,11 @@ def build_finetuned_feature_extractor(
 
 
 def _trainable_prefixes_for_policy(model: nn.Module, name: str, policy: str) -> list[str]:
+    if name in {"vit_b16", "beit_base"} and policy == "last_1_block":
+        block_count = len(model.blocks)
+        prefixes = [f"blocks.{index}" for index in range(max(block_count - 1, 0), block_count)]
+        prefixes.extend(_existing_prefixes(model, ["norm", "fc_norm", "head"]))
+        return prefixes
     if name in {"vit_b16", "beit_base"} and policy == "last_2_blocks":
         block_count = len(model.blocks)
         prefixes = [f"blocks.{index}" for index in range(max(block_count - 2, 0), block_count)]

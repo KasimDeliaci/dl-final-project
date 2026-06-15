@@ -1,0 +1,39 @@
+experiment:
+  id: e3e_vit_last1_lr5e6
+  feature_source: finetuned_vit_last1_lr5e6
+  selection_metric: validation_macro_f1
+  test_policy: not_loaded_or_used_in_e3e
+  status: planned
+
+finetuning:
+  experiment_id: E3e
+  feature_source: finetuned_vit_last1_lr5e6
+  seed: 42
+  image_size: 224
+  backbones:
+    - vit_b16
+  checkpoint_dir: artifacts/checkpoints/ham10000/e3e_vit_last1_lr5e6
+  batch_size: 16
+  epochs: 8
+  backbone_learning_rate: 0.000005
+  head_learning_rate: 0.0001
+  weight_decay: 0.0001
+  early_stopping_patience: 3
+  class_weighting: true
+  mixed_precision: true
+  checkpoint_selection: validation_macro_f1
+  test_policy: not_loaded_or_used_in_e3e
+  run_tag: last1_lr5e6
+  summary_name: e3e_vit_last1_lr5e6_summary.json
+  unfreeze_policies:
+    vit_b16: last_1_block
+  feature_extraction_after_selection:
+    output_root: artifacts/features
+    output_source: finetuned_vit_last1_lr5e6
+    splits:
+      - train
+      - val
+    cache_format: sprint2_compatible_pt_plus_csv_manifest
+  colab:
+    drive_root: MyDrive/dl-final-artifact/e3e_conservative_vit
+    note: Separate Drive namespace; do not overwrite canonical Sprint 4 finetuned caches.

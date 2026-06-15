@@ -57,6 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-tag", default=None)
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--experiment-id", default=None)
+    parser.add_argument("--test-policy", default=None)
     return parser.parse_args()
 
 
@@ -190,10 +191,7 @@ def run_single_backbone(
         "dropout": args.dropout,
         "early_stopping_patience": args.early_stopping_patience,
         "selection_metric": "validation_macro_f1",
-        "test_policy": (
-            "not_used_in_sprint4" if args.feature_source == "finetuned"
-            else "not_used_in_sprint2_model_selection"
-        ),
+        "test_policy": args.test_policy or _test_policy_for_source(args.feature_source),
         "feature_cache_dir": str(cache_dir),
         "runtime_seconds": runtime_seconds,
     }
@@ -240,6 +238,12 @@ def _seed_everything(seed: int) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+
+def _test_policy_for_source(feature_source: str) -> str:
+    if feature_source.startswith("finetuned"):
+        return "not_used_in_sprint4"
+    return "not_used_in_sprint2_model_selection"
 
 
 if __name__ == "__main__":

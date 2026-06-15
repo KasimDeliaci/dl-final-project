@@ -89,6 +89,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-tag", default=None)
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--experiment-id", default=None)
+    parser.add_argument("--test-policy", default=None)
     parser.add_argument("--skip-export", action="store_true")
     return parser.parse_args()
 
@@ -162,7 +163,7 @@ def main() -> None:
         "feature_source": args.feature_source,
         "seed": seed,
         "selection_metric": "validation_macro_f1",
-        "test_policy": _test_policy_for_source(args.feature_source),
+        "test_policy": _test_policy_for_source(args.feature_source, args.test_policy),
         "completed_runs": completed,
     }
     manifest_name = f"{args.feature_source}_fusion_manifest.json"
@@ -326,7 +327,7 @@ def run_fusion_experiment(
         "dropout": args.dropout,
         "early_stopping_patience": args.early_stopping_patience,
         "selection_metric": "validation_macro_f1",
-        "test_policy": _test_policy_for_source(args.feature_source),
+        "test_policy": _test_policy_for_source(args.feature_source, args.test_policy),
         "feature_cache_dirs": [
             str(Path(args.feature_root) / str(dataset_config["name"]) / args.feature_source / b)
             for b in backbones
@@ -361,7 +362,7 @@ def run_fusion_experiment(
         "fusion_input_dim": expected_concat_dim(backbones),
         "fusion_output_dim": fusion_output_dim,
         "selection_metric": "validation_macro_f1",
-        "test_policy": _test_policy_for_source(args.feature_source),
+        "test_policy": _test_policy_for_source(args.feature_source, args.test_policy),
     }
     fusion_weights = extract_fusion_weights(model, backbones)
     if fusion_weights:
@@ -716,8 +717,12 @@ def _experiment_id_for_source(feature_source: str, override: str | None = None) 
     return "E3" if feature_source == "finetuned" else "E2"
 
 
-def _test_policy_for_source(feature_source: str) -> str:
-    return "not_used_in_sprint4" if feature_source == "finetuned" else "not_used_in_sprint3"
+def _test_policy_for_source(feature_source: str, override: str | None = None) -> str:
+    if override:
+        return override
+    if feature_source.startswith("finetuned"):
+        return "not_used_in_sprint4"
+    return "not_used_in_sprint3"
 
 
 def _resolve_device(value: str | None) -> torch.device:

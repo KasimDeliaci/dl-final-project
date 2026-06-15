@@ -45,6 +45,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-mixed-precision", action="store_true")
     parser.add_argument("--skip-training", action="store_true")
     parser.add_argument("--skip-feature-extraction", action="store_true")
+    parser.add_argument("--feature-source", default=None)
+    parser.add_argument("--experiment-id", default=None)
+    parser.add_argument("--test-policy", default=None)
+    parser.add_argument("--run-tag", default=None)
     return parser.parse_args()
 
 
@@ -81,6 +85,12 @@ def main() -> None:
         args.checkpoint_dir
         or finetune_config.get("checkpoint_dir", "artifacts/checkpoints/ham10000/finetuned")
     )
+    feature_source = str(args.feature_source or finetune_config.get("feature_source", "finetuned"))
+    experiment_id = str(args.experiment_id or finetune_config.get("experiment_id", "E3"))
+    test_policy = str(
+        args.test_policy or finetune_config.get("test_policy", "not_used_in_sprint4")
+    )
+    run_tag = args.run_tag or finetune_config.get("run_tag")
     backbones = _selected_backbones(args, finetune_config)
     class_names = list(dataset_config["class_names"])
     image_size = int(dataset_config.get("image_size") or finetune_config.get("image_size", 224))
@@ -153,6 +163,10 @@ def main() -> None:
                 class_weighting=not args.no_class_weights,
                 run_root=args.run_root,
                 limit_per_split=args.limit_per_split,
+                feature_source=feature_source,
+                experiment_id=experiment_id,
+                test_policy=test_policy,
+                run_tag=run_tag,
                 config={
                     "finetune_config": str(Path(args.config)),
                     "dataset_config": str(Path(args.dataset_config)),
@@ -164,7 +178,7 @@ def main() -> None:
             cache_dir = backbone_cache_dir(
                 args.feature_root,
                 str(dataset_config["name"]),
-                "finetuned",
+                feature_source,
                 backbone,
             )
             manifest_path = extract_finetuned_feature_cache(
@@ -180,8 +194,8 @@ def main() -> None:
                     "checkpoint_path": str(checkpoint_path),
                     "checkpoint_metadata": checkpoint_metadata,
                     "selection_metric": "validation_macro_f1",
-                    "test_policy": "not_used_in_sprint4",
-                    "feature_source": "finetuned",
+                    "test_policy": test_policy,
+                    "feature_source": feature_source,
                     "limit_per_split": args.limit_per_split,
                     "unfreeze_policy": policy,
                     "batch_size": batch_size,
@@ -198,14 +212,20 @@ def main() -> None:
                     backbone_cache_dir(
                         args.feature_root,
                         str(dataset_config["name"]),
-                        "finetuned",
+                        feature_source,
                         backbone,
                     )
                 ),
             }
         )
 
-    summary_path = Path(args.run_root) / "s4_finetune_backbones_summary.json"
+    default_summary_name = (
+        "s4_finetune_backbones_summary.json"
+        if experiment_id == "E3" and feature_source == "finetuned"
+        else f"{experiment_id.lower()}_finetune_backbones_summary.json"
+    )
+    summary_name = str(finetune_config.get("summary_name", default_summary_name))
+    summary_path = Path(args.run_root) / summary_name
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(f"Wrote fine-tuning summary: {summary_path}")

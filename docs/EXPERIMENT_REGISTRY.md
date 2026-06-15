@@ -203,6 +203,112 @@ Report role: Robustness check for Sprint 4 fine-tuned feature conclusions.
 
 Result note: E3b completed as a CPU validation-only downstream MLP robustness diagnostic. Over seeds `7,13,42,101,202`, fine-tuned `vit_b16+swin_tiny+beit_base concat` had the highest mean validation macro-F1 (`0.7246 ± 0.0143`, min `0.7032`, max `0.7413`). Fine-tuned `vit_b16+swin_tiny concat` averaged `0.7160 ± 0.0085`. Frozen `vit_b16+swin_tiny concat deep_reg` averaged `0.7077 ± 0.0124`; the original seed-42 E2b value `0.7262` was reproduced on CPU but appears to be near the high end of the observed seed range. Fine-tuned ViT single averaged `0.6801 ± 0.0084`, supporting the conclusion that ViT single-backbone fine-tuning is mixed and does not robustly exceed the frozen ViT baseline. Test metrics were not computed.
 
+### E3c - Metadata-Augmented Cached Feature Fusion
+
+Status: completed
+
+Question: HAM10000 benchmark metadata (`age`, `sex`, `localization`) fine-tuned transformer feature fusion'a eklendiğinde validation macro-F1 ve per-class F1 iyileşiyor mu?
+
+Hypothesis: Age, sex, and localization may provide complementary benchmark signal to image-only fine-tuned transformer features, especially for classes whose distribution is associated with anatomical site or age. However, metadata may also encode dataset-specific correlations and may not improve macro-F1 once strong transformer features are used.
+
+Changed variable: Metadata input is added to fixed cached feature MLP/fusion conditions.
+
+Fixed controls: Canonical lesion-aware train/validation split, fixed fine-tuned feature caches, train-only image scaler, train-only metadata preprocessing, train-only class weights, validation-only selection, no test metrics.
+
+Selection rule: Diagnostic comparison uses mean/std/min/max validation macro-F1 over seeds `7`, `13`, `42`, `101`, and `202`. Final model selection is not changed by a single seed.
+
+Expected failure mode: Metadata may improve majority-class or accuracy behavior while hurting macro-F1, or it may overfit validation through benchmark-specific correlations.
+
+Required artifacts:
+
+- run configs,
+- metadata preprocessing metadata,
+- metrics summaries,
+- per-class metrics,
+- confusion matrices,
+- prediction dumps,
+- training histories,
+- multi-seed summary table,
+- image-only vs image+metadata comparison table.
+
+Report role: Multimodal feature-transfer diagnostic for structured benchmark metadata.
+
+Implementation plan: E3c is recorded in `docs/exec-plans/completed/e3c-metadata-augmented-feature-fusion.md`. Allowed metadata fields are limited to `age`, `sex`, and `localization`; `dx`, `dx_type`, `dataset`, `image_id`, `sample_id`, and `lesion_id` are excluded from model input. Test split is not loaded or transformed.
+
+Result note: E3c completed as a validation-only metadata-augmented cached-feature diagnostic. Over seeds `7,13,42,101,202`, fine-tuned `vit_b16+swin_tiny+beit_base concat + metadata` reached mean validation macro-F1 `0.7278 ± 0.0058`, compared with the image-only E3b triple concat mean `0.7246 ± 0.0143`. Fine-tuned `vit_b16+swin_tiny concat + metadata` reached `0.7230 ± 0.0138`, compared with the image-only E3b pair concat mean `0.7160 ± 0.0085`. The metadata-only MLP remained weak (`0.2202 ± 0.0077`), indicating that metadata is not independently sufficient. Per-class behavior was mixed: triple concat + metadata improved mean F1 most clearly for `akiec` but reduced `bkl`; pair concat + metadata improved `df`, `vasc`, and `nv` modestly while slightly reducing `mel`. The result should be framed as limited validation evidence that structured benchmark metadata can provide small complementary signal to fine-tuned transformer features, not as a clinical claim. Test metrics were not computed.
+
+### E3d - Metadata Fusion Operator Ablation
+
+Status: completed
+
+Question: E3c'de küçük fayda veren metadata sinyali, raw concat yerine metadata-conditioned lightweight fusion operator'larıyla daha güçlü veya daha stabil validation macro-F1 üretir mi?
+
+Hypothesis: Age, sex, and localization metadata may be more useful when used to modulate fine-tuned transformer image features than when only appended to the MLP input. However, small metadata-conditioned operators may overfit validation or shift gains away from important minority classes.
+
+Changed variable: Metadata fusion operator over fixed fine-tuned ViT/Swin/BEiT cached features.
+
+Fixed controls: Canonical train/validation split, fixed fine-tuned feature caches, train-only per-backbone image scaling, train-only metadata preprocessing, train-only class weights, validation-only selection, no test metrics, seeds `7`, `13`, `42`, `101`, and `202`.
+
+Selection rule: Diagnostic comparison uses mean/std/min/max validation macro-F1 over seeds. E3d must be compared against E3c raw concat + metadata and E3b image-only controls.
+
+Expected failure mode: Metadata-gated or FiLM-style operators may produce a small validation gain while hurting `mel` or other minority-class F1, or may be less stable than raw concat.
+
+Required artifacts:
+
+- run configs,
+- metadata preprocessing metadata,
+- metadata fusion metadata,
+- optional gate summaries,
+- metrics summaries,
+- per-class metrics,
+- confusion matrices,
+- prediction dumps,
+- training histories,
+- operator summary table,
+- comparison against E3c raw concat and E3b image-only controls.
+
+Report role: Lightweight multimodal fusion operator ablation over fixed fine-tuned transformer features.
+
+Implementation plan: E3d is recorded in `docs/exec-plans/completed/e3d-metadata-fusion-operator-ablation.md`. Canonical operators are metadata-gated backbone fusion, bounded FiLM-style metadata conditioning, and a two-branch image/metadata MLP. Test split is not loaded or transformed.
+
+Result note: E3d completed as a validation-only metadata fusion operator ablation over fixed fine-tuned `vit_b16+swin_tiny+beit_base` features. Over seeds `7,13,42,101,202`, bounded FiLM-style metadata conditioning reached the highest mean validation macro-F1 (`0.7358 ± 0.0152`), followed by metadata-gated backbone fusion (`0.7347 ± 0.0112`) and two-branch image/metadata fusion (`0.7328 ± 0.0103`). All three operators exceeded the E3c raw concat + metadata control (`0.7278 ± 0.0058`) and the E3b image-only triple concat control (`0.7246 ± 0.0143`). Per-class behavior remained mixed: FiLM improved `mel` relative to E3c raw concat but reduced `akiec` and `vasc`; gated fusion improved `akiec`, `bcc`, `mel`, and `vasc` but reduced `df`; two-branch fusion improved `df` and `mel` but reduced `vasc`. The result supports limited validation evidence that metadata is more useful when it conditions image representations than when only appended, but it does not support a clinical claim or final test conclusion. Test metrics were not computed.
+
+### E3e - Conservative ViT Fine-Tuning Diagnostic
+
+Status: planned
+
+Question: Canonical partial fine-tuning neden ViT single-backbone validation macro-F1'i frozen ViT baseline'a göre az düşürdü (`0.6924 -> 0.6876`)? Daha düşük backbone LR veya daha dar unfreeze policy ViT representation'ı koruyarak bu düşüşü azaltıyor mu?
+
+Hypothesis: ViT'in canonical last-2-block fine-tuning koşulundaki düşüşü, HAM10000 benchmark dermoscopic image classification için over-adaptation veya learning-rate sensitivity kaynaklı olabilir. Daha konservatif `last_2_blocks + 5e-6` veya `last_1_block + 5e-6` koşulları frozen ViT representation kalitesini daha iyi koruyabilir.
+
+Changed variable: Only ViT fine-tuning policy and backbone LR. Swin/BEiT checkpoints and caches are not re-fine-tuned.
+
+Fixed controls: Canonical lesion-aware train/validation split, ViT model ID, image size, train transforms, class weighting, head LR `1e-4`, epochs `8`, early stopping patience `3`, validation macro-F1 checkpoint selection, no test metrics.
+
+Selection rule: Compare E3e ViT single-backbone MLP against frozen ViT (`0.6924`) and canonical fine-tuned ViT (`0.6876`). Mixed ViT+Swin+BEiT concat uses validation macro-F1 only and is compared against E3b/E3c/E3d validation controls. No final selection is made from test metrics.
+
+Expected failure mode: Lower LR may under-adapt, or last-one-block fine-tuning may improve ViT single but not downstream fusion. Negative results remain reportable as ViT fine-tuning sensitivity evidence.
+
+Required artifacts:
+
+- E3e configs,
+- Colab runner,
+- selected ViT checkpoints,
+- train/validation feature caches,
+- checkpoint metadata with trainable prefixes and learning rates,
+- ViT single-backbone MLP runs,
+- mixed ViT+Swin+BEiT concat runs,
+- optional metadata-conditioned follow-up only if validation results justify it,
+- training curves,
+- per-class metrics,
+- confusion matrices,
+- prediction dumps,
+- Drive sync under `MyDrive/dl-final-artifact/e3e_conservative_vit/`.
+
+Report role: Focused fine-tuning sensitivity diagnostic for the strongest frozen transformer backbone.
+
+Implementation plan: E3e is recorded in `docs/exec-plans/active/e3e-conservative-vit-finetuning.md`. Colab launcher: `notebooks/05_e3e_conservative_vit_finetuning.ipynb`. Test split is not loaded or transformed for E3e.
+
 ### E4 - Final Model Selection and Audit
 
 Status: planned

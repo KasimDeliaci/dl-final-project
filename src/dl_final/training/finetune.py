@@ -65,6 +65,10 @@ def finetune_backbone(
     class_weighting: bool = True,
     run_root: str | Path = "artifacts/runs",
     limit_per_split: int | None = None,
+    feature_source: str = "finetuned",
+    experiment_id: str = "E3",
+    test_policy: str = "not_used_in_sprint4",
+    run_tag: str | None = None,
     config: dict[str, Any] | None = None,
 ) -> tuple[Path, Path, dict[str, Any]]:
     """Fine-tune one transformer and save the best validation macro-F1 checkpoint."""
@@ -121,13 +125,13 @@ def finetune_backbone(
     checkpoint_root.mkdir(parents=True, exist_ok=True)
     checkpoint_path = checkpoint_root / "best.pt"
     checkpoint_metadata = {
-        "experiment_id": "E3",
+        "experiment_id": experiment_id,
         "backbone": backbone,
         "seed": seed,
         "selection_metric": "validation_macro_f1",
         "best_validation_macro_f1": metrics["macro_f1"],
         "best_epoch": metrics.get("best_epoch"),
-        "test_policy": "not_used_in_sprint4",
+        "test_policy": test_policy,
         "runtime_seconds": runtime_seconds,
         "unfreeze_policy": trainability,
         "class_weighting": class_weighting,
@@ -149,20 +153,24 @@ def finetune_backbone(
         checkpoint_path,
     )
 
-    run_id = f"s4_finetune_{backbone_alias(backbone)}_seed{seed}"
+    tag = f"_{run_tag}" if run_tag else ""
+    if experiment_id == "E3" and feature_source == "finetuned":
+        run_id = f"s4_finetune_{backbone_alias(backbone)}{tag}_seed{seed}"
+    else:
+        run_id = f"{experiment_id.lower()}_finetune_{backbone_alias(backbone)}{tag}_seed{seed}"
     if limit_per_split is not None:
         run_id = f"{run_id}_limit{limit_per_split}"
     run_dir = Path(run_root) / run_id
     run_config = {
         "run_id": run_id,
-        "experiment_id": "E3",
+        "experiment_id": experiment_id,
         "seed": seed,
-        "feature_source": "finetuned",
+        "feature_source": feature_source,
         "backbone": backbone,
         "backbones": [backbone],
         "fusion_method": "finetune_head",
         "selection_metric": "validation_macro_f1",
-        "test_policy": "not_used_in_sprint4",
+        "test_policy": test_policy,
         "checkpoint_path": str(checkpoint_path),
         "runtime_seconds": runtime_seconds,
         **checkpoint_metadata,
