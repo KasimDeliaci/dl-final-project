@@ -487,6 +487,8 @@ Completed:
    fine-tuned transformer features over five downstream MLP seeds.
 3. E3d tested lightweight metadata-conditioned fusion operators over fixed fine-tuned transformer
    features and compared them against E3c raw concat + metadata.
+4. E3e tested two conservative ViT-only partial fine-tuning policies in Colab to diagnose whether
+   the canonical ViT single-backbone drop was caused by overly aggressive adaptation.
 
 Remaining optional checks:
 
@@ -498,6 +500,43 @@ Remaining optional checks:
    and samples newly misclassified.
 4. If compute permits, run an E2b-style stronger MLP diagnostic on the fine-tuned concat features to
    separate representation effects from downstream classifier capacity.
+
+## E3e Conservative ViT Fine-Tuning Diagnostic
+
+E3e was run as a focused validation-only diagnostic after the main fine-tuning, multi-seed, and
+metadata fusion analyses. The question was whether the slight ViT single-backbone drop from frozen
+`0.6924` to canonical fine-tuned `0.6876` could be recovered by making ViT adaptation more
+conservative.
+
+Two Colab-trained ViT policies were evaluated:
+
+| Condition | Unfreeze policy | Backbone LR | ViT single macro-F1 | Mixed ViT+Swin+BEiT concat macro-F1 |
+|---|---|---:|---:|---:|
+| E3e last-2 LR `5e-6` | last 2 ViT blocks + norm/head | `5e-6` | `0.6694` | `0.7082` |
+| E3e last-1 LR `5e-6` | last 1 ViT block + norm/head | `5e-6` | `0.6685` | `0.7259` |
+
+The conservative ViT policies did not recover the frozen ViT single-backbone baseline. Both single
+ViT downstream MLP results remained below the frozen ViT baseline and below the canonical fine-tuned
+ViT single result. This suggests that the earlier ViT drop cannot be explained only by opening too
+many blocks or by using a slightly higher backbone learning rate.
+
+The mixed triple-fusion result was more nuanced. The last-1 policy reached `0.7259` validation
+macro-F1 when combined with the canonical fine-tuned Swin and BEiT caches, which is close to the E3b
+fine-tuned triple concat multi-seed mean (`0.7246 ± 0.0143`). However, it did not exceed the
+canonical seed-42 triple concat result (`0.7298`), the E3c raw metadata concat mean
+(`0.7278 ± 0.0058`), or the E3d FiLM metadata-conditioned mean (`0.7358 ± 0.0152`). The last-2
+lower-LR policy was clearly weaker in fusion (`0.7082`).
+
+Per-class behavior remained class-dependent rather than uniformly improved. In mixed triple concat,
+last-1 improved `df` (`0.6522 -> 0.8108`), `mel` (`0.5769 -> 0.5937`), and `vasc`
+(`0.7451 -> 0.7755`) relative to last-2, but reduced `akiec` (`0.6415 -> 0.6071`) and `bcc`
+(`0.7075 -> 0.6500`). Because `df` and `vasc` have low validation support, these deltas should be
+used as qualitative evidence of class-level instability, not as standalone conclusions.
+
+E3e should therefore be reported as a negative but informative ablation: more conservative ViT
+fine-tuning did not improve the main validation-best model, but it clarified that ViT feature
+transfer is sensitive to the fine-tuning protocol and that the frozen ViT representation remains a
+strong control. The main fine-tuned fusion conclusion should remain anchored to E3b/E3c/E3d.
 
 ## Report-Ready Turkish Wording
 

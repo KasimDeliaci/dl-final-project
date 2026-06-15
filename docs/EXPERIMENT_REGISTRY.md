@@ -275,7 +275,7 @@ Result note: E3d completed as a validation-only metadata fusion operator ablatio
 
 ### E3e - Conservative ViT Fine-Tuning Diagnostic
 
-Status: planned
+Status: completed
 
 Question: Canonical partial fine-tuning neden ViT single-backbone validation macro-F1'i frozen ViT baseline'a göre az düşürdü (`0.6924 -> 0.6876`)? Daha düşük backbone LR veya daha dar unfreeze policy ViT representation'ı koruyarak bu düşüşü azaltıyor mu?
 
@@ -307,7 +307,9 @@ Required artifacts:
 
 Report role: Focused fine-tuning sensitivity diagnostic for the strongest frozen transformer backbone.
 
-Implementation plan: E3e is recorded in `docs/exec-plans/active/e3e-conservative-vit-finetuning.md`. Colab launcher: `notebooks/05_e3e_conservative_vit_finetuning.ipynb`. Test split is not loaded or transformed for E3e.
+Implementation plan: E3e is recorded in `docs/exec-plans/completed/e3e-conservative-vit-finetuning.md`. Colab launcher: `notebooks/05_e3e_conservative_vit_finetuning.ipynb`. Test split was not loaded or transformed for E3e.
+
+Result note: E3e completed as a validation-only Colab diagnostic. Conservative ViT single-backbone features did not recover the frozen ViT baseline: `last_2_blocks + LR 5e-6` reached `0.6694` validation macro-F1 and `last_1_block + LR 5e-6` reached `0.6685`, both below frozen ViT (`0.6924`) and canonical fine-tuned ViT (`0.6876`). Mixed ViT+Swin+BEiT concat with canonical fine-tuned Swin/BEiT caches was stronger for the last-1 policy (`0.7259`) than the last-2 lower-LR policy (`0.7082`), but did not exceed the canonical seed-42 fine-tuned triple concat (`0.7298`) or the E3d metadata-conditioned validation means. E3e is therefore reported as a negative but informative fine-tuning sensitivity ablation, not as a replacement for the main fine-tuned fusion result. Test metrics were not computed.
 
 ### E4 - Final Model Selection and Audit
 
