@@ -342,11 +342,36 @@ def build_feature_bank(
                     bank[key] = bank[("finetuned", backbone, view)]
                     continue
                 if view == "identity":
-                    bank[key] = load_identity_feature_block(
-                        feature_root / dataset_name / source / backbone,
-                        split_csv=split_csv,
-                        max_samples=max_samples,
+                    cache_dir = feature_root / dataset_name / source / backbone
+                    if identity_feature_cache_exists(cache_dir):
+                        bank[key] = load_identity_feature_block(
+                            cache_dir,
+                            split_csv=split_csv,
+                            max_samples=max_samples,
+                        )
+                        continue
+                    if source != "frozen_vit_finetuned_swin_beit" or backbone != "vit_b16":
+                        raise FileNotFoundError(feature_cache_path(cache_dir, "val"))
+                    model = build_tta_feature_extractor(
+                        source=source,
+                        backbone=backbone,
+                        checkpoint_root=checkpoint_root,
+                        class_names=class_names,
                     )
+                    bank[key] = extract_view_feature_block(
+                        model,
+                        backbone=backbone,
+                        split_csv=split_csv,
+                        class_names=class_names,
+                        image_size=image_size,
+                        view=view,
+                        device=device,
+                        batch_size=batch_size,
+                        num_workers=num_workers,
+                        max_samples=max_samples,
+                        mixed_precision=mixed_precision,
+                    )
+                    release_torch_model(model)
                     continue
                 model = build_tta_feature_extractor(
                     source=source,
@@ -370,6 +395,10 @@ def build_feature_bank(
                 release_torch_model(model)
     verify_feature_bank_alignment(bank)
     return bank
+
+
+def identity_feature_cache_exists(cache_dir: Path) -> bool:
+    return feature_cache_path(cache_dir, "val").exists()
 
 
 def load_identity_feature_block(
