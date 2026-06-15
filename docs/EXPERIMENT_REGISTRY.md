@@ -341,6 +341,34 @@ Implementation plan: E3f is recorded in `docs/exec-plans/completed/e3f-mixed-fro
 
 Result note: E3f completed as a validation-only cached-feature ablation. The mixed image-only concat source (`frozen vit_b16 + fine-tuned swin_tiny + fine-tuned beit_base`) reached `0.7142 ± 0.0126` mean validation macro-F1, below the all-fine-tuned triple concat control (`0.7246 ± 0.0143`). Metadata-conditioned results were stronger: mixed FiLM reached `0.7267 ± 0.0191`, while mixed metadata-gated fusion reached `0.7361 ± 0.0100`. The mixed gated mean is numerically the highest current validation-only multi-seed mean and is essentially tied with E3d all-fine-tuned FiLM (`0.7358 ± 0.0152`). Per-class behavior is mixed: the mean gain is driven mainly by `df`, while `akiec`, `bcc`, and `vasc` decline relative to E3d all-fine-tuned gated. The result is reported as source/operator interaction evidence, not as a decisive final model conclusion. Test metrics were not computed.
 
+### E3g - Prediction-Level Ensemble Diagnostic
+
+Status: planned
+
+Question: E3d and E3f top validation candidates are nearly tied but show different per-class behavior. Can validation-only probability averaging over existing prediction dumps reduce seed/model-family variance and improve validation macro-F1?
+
+Hypothesis: Equal-weight probability averaging across top E3d/E3f families may improve validation macro-F1 by smoothing seed variance and combining complementary per-class behavior, especially between E3d FiLM and E3f mixed gated outputs.
+
+Changed variable: Prediction-level aggregation only. No backbone, feature cache, metadata preprocessing, or MLP training is changed.
+
+Fixed controls: Existing validation prediction dumps, fixed class order, fixed lesion-aware split, validation-only metrics, no test split usage.
+
+Selection rule: Primary results are equal-weight seed/family ensembles. Small weighted-grid diagnostics may be run but must be reported separately because they use validation labels for model-choice pressure. If improvement is below about `0.002` macro-F1, report as practical tie.
+
+Required artifacts:
+
+- ensemble membership table,
+- ensemble prediction dumps,
+- validation metrics,
+- per-class metrics,
+- confusion matrices,
+- error-overlap summary,
+- comparison against E3d/E3f controls.
+
+Report role: Post-hoc validation-only robustness and score-oriented diagnostic before considering heavier TTA/multi-view extraction.
+
+Implementation plan: E3g is recorded in `docs/exec-plans/active/e3g-prediction-ensemble.md`. Test split must not be loaded or transformed for E3g.
+
 ### E4 - Final Model Selection and Audit
 
 Status: planned
