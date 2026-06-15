@@ -903,6 +903,12 @@ Colab runner:
 notebooks/06_e3h_tta_rot4.ipynb
 ```
 
+The notebook restores inputs from `MyDrive/dl-final-artifact/artifacts/`. If that tree is not
+complete, it can also restore `MyDrive/dl-final-artifact/e3h_tta_rot4/e3h_tta_inputs.tar`, whose
+archive root should contain `artifacts/...`. The notebook keeps a T4-safe default
+`E3H_BATCH_SIZE = 128`; raise that single variable to `192` or `256` only if the assigned Colab GPU
+has enough memory.
+
 Local smoke only:
 
 ```bash

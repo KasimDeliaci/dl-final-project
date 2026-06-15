@@ -240,6 +240,7 @@ Implemented:
   metadata-conditioned model families.
 - `tests/test_e3h_tta.py` for E3h helper behavior.
 - `notebooks/06_e3h_tta_rot4.ipynb` as a thin Colab runner that restores required Drive artifacts,
+  accepts an optional `MyDrive/dl-final-artifact/e3h_tta_rot4/e3h_tta_inputs.tar` fallback bundle,
   runs smoke/full E3h commands, verifies outputs, displays report assets, and syncs E3h results
   under `MyDrive/dl-final-artifact/e3h_tta_rot4/`.
 - `docs/COMMANDS.md` E3h smoke, full Colab, and artifact-integrity commands.
@@ -259,4 +260,6 @@ Full validation status:
 - Full local validation was attempted but stopped because local MPS/CPU inference was too slow, and
   `batch-size 256` was killed by memory pressure (`exit 137`).
 - Full `1504`-row E3h validation should be run on Colab GPU using the notebook/command above.
+  The notebook defaults to `E3H_BATCH_SIZE = 128` to avoid T4 out-of-memory failures; `192` or
+  `256` can be tried only when Colab assigns a larger-memory GPU.
 - E3h remains active until full validation outputs are produced and the report note is written.
