@@ -602,7 +602,7 @@ def export_fusion_report_assets(
             continue
         metrics = pd.read_csv(metrics_path).iloc[0].to_dict()
         row = {**config, **metrics}
-        if config.get("experiment_id") in {"E2", "E3"}:
+        if config.get("fusion_method") != "none":
             fusion_rows.append(row)
             per_class_path = config_path.parent / "per_class_metrics.csv"
             if per_class_path.exists():

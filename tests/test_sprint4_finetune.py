@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
+import pandas as pd
 import torch
 
 from dl_final.features.cache import (
@@ -164,3 +166,39 @@ def test_finetuned_fusion_runner_uses_e3_and_sprint4_test_policy() -> None:
         "finetuned_vit_last1_lr5e6",
         "not_loaded_or_used_in_e3e",
     ) == "not_loaded_or_used_in_e3e"
+
+
+def test_fusion_export_includes_e3e_feature_sources(tmp_path: Path) -> None:
+    runner = _load_fusion_runner_module()
+    run_dir = tmp_path / "runs" / "e3e_run"
+    run_dir.mkdir(parents=True)
+    config = {
+        "run_id": "e3e_run",
+        "experiment_id": "E3e",
+        "feature_source": "finetuned_vit_last1_lr5e6_plus_s4_swin_beit",
+        "fusion_method": "concat",
+        "backbone": "vit_b16+swin_tiny+beit_base",
+        "backbones": ["vit_b16", "swin_tiny", "beit_base"],
+    }
+    (run_dir / "run_config.json").write_text(json.dumps(config), encoding="utf-8")
+    pd.DataFrame([{"macro_f1": 0.71, "accuracy": 0.8, "weighted_f1": 0.81}]).to_csv(
+        run_dir / "metrics_summary.csv",
+        index=False,
+    )
+    pd.DataFrame([{"label": "nv", "f1": 0.9}]).to_csv(
+        run_dir / "per_class_metrics.csv",
+        index=False,
+    )
+
+    exported = runner.export_fusion_report_assets(
+        tmp_path / "runs",
+        tmp_path / "tables",
+        tmp_path / "figures",
+        feature_source="finetuned_vit_last1_lr5e6_plus_s4_swin_beit",
+    )
+
+    results = pd.read_csv(exported["fusion_results"])
+    assert results["experiment_id"].tolist() == ["E3e"]
+    assert results["feature_source"].tolist() == [
+        "finetuned_vit_last1_lr5e6_plus_s4_swin_beit"
+    ]
