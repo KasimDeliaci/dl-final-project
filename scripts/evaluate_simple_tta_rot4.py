@@ -122,7 +122,7 @@ def main() -> None:
         dataset_name=str(dataset_config["name"]),
         split_csv=split_csv,
         class_names=class_names,
-        image_size=int(dataset_config.get("image_size", 224)),
+        image_size=resolve_image_size(dataset_config),
         views=views,
         device=device,
         batch_size=args.batch_size,
@@ -319,6 +319,15 @@ def main() -> None:
         ensemble_predictions=ensemble_predictions,
     )
     print(f"Wrote E3i simple TTA artifacts: {output_run_dir}")
+
+
+def resolve_image_size(dataset_config: dict[str, Any], *, default: int = 224) -> int:
+    """Return the configured image size, treating YAML null as the default."""
+
+    value = dataset_config.get("image_size")
+    if value is None:
+        return int(default)
+    return int(value)
 
 
 def load_run_specs(run_dirs: list[Path]) -> list[RunSpec]:

@@ -83,6 +83,12 @@ def test_e3i_run_alias_is_filesystem_safe() -> None:
     assert e3i.run_alias(config) == "vit_b16-swin_tiny-beit_base_weightedlearned512_seed42"
 
 
+def test_e3i_image_size_null_uses_transformer_default() -> None:
+    assert e3i.resolve_image_size({"image_size": None}) == 224
+    assert e3i.resolve_image_size({}) == 224
+    assert e3i.resolve_image_size({"image_size": 256}) == 256
+
+
 def _run_config(*, fusion_method: str) -> dict:
     return {
         "run_id": "example",
